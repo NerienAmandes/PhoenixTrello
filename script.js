@@ -246,9 +246,9 @@ board.addEventListener('click', e => {
         else if (btn.dataset.act === 'archive') archiveCard(c);
         else move(c, c.stage + (btn.dataset.act === 'right' ? 1 : -1)); return;
     }
-    /* клик по бумажке переписывает её, а это право админа;
-       остальным просто ничего не делаем — зачем ругаться на обычное движение по доске */
-    const card = e.target.closest('.card'); if (card && admin) openEditor(card.dataset.id);
+    /* клик по бумажке больше не открывает редактор — на телефоне один
+       промах мимо кнопок и админ оказывается в форме без желания туда лезть.
+       Редактор открывается только явной кнопкой «✎». */
 });
 board.addEventListener('dragstart', e => { const c = e.target.closest('.card'); if (!c) return; e.dataTransfer.setData('text/plain', c.dataset.id); c.classList.add('dragging'); });
 board.addEventListener('dragend', () => { document.querySelectorAll('.dragging,.over').forEach(x => x.classList.remove('dragging', 'over')); });
@@ -285,9 +285,10 @@ delBtn.onclick = async () => { if (!requireAdmin('сжигать карточк�
 document.getElementById('cancelBtn').onclick = () => modal.classList.remove('show');
 document.getElementById('handSave').onclick = async () => { const c = byId(handCardId); if (c) { c.who = hWho.value.trim(); await saveFlow(c); render(); } hand.classList.remove('show'); };
 document.getElementById('handSkip').onclick = () => hand.classList.remove('show');
-modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('show'); });
-hand.addEventListener('click', e => { if (e.target === hand) hand.classList.remove('show'); });
-loginModal.addEventListener('click', e => { if (e.target === loginModal) loginModal.classList.remove('show'); });
+modal.addEventListener('click', e => { /* подложка больше не закрывает модалку — на телефоне
+   один промах пальцем и всё исчезает. Закрываем только отменой или Esc */ });
+hand.addEventListener('click', e => { /* см. выше — подложка не закрывает */ });
+loginModal.addEventListener('click', e => { /* см. выше — подложка не закрывает */ });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { modal.classList.remove('show'); hand.classList.remove('show'); loginModal.classList.remove('show'); } });
 
 /* ---- вход ---- */
