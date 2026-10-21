@@ -42,9 +42,11 @@ const board = document.getElementById('board');
    он изменить не может даже из консоли браузера.
    Всё остальное идёт через SECURITY DEFINER функции, которые сами проверяют
    is_admin(). Ошибка приливает сюда и молча откатывает локальную карточку. */
-function saveFlow(c) {
-    if (sb) sb.from('cards').update({ stage: c.stage, who: c.who || '', done_at: c.doneAt || null, archived_at: c.archivedAt || null }).eq('id', c.id);
-    else save();
+async function saveFlow(c) {
+    if (!sb) { save(); return; }
+    /* await обязателен: билдер supabase-js ленивый, без него запрос просто не уходит */
+    const { error } = await sb.from('cards').update({ stage: c.stage, who: c.who || '', done_at: c.doneAt || null, archived_at: c.archivedAt || null }).eq('id', c.id);
+    if (error) { console.warn('не сохранилось', error); await loadCards(); }
 }
 async function saveCard(c) {
     if (!sb) { save(); return; }
@@ -55,10 +57,12 @@ async function saveCard(c) {
     });
     if (error) { await loadCards(); return; }
 }
-function removeCard(id) {
+async function removeCard(id) {
     state.cards = state.cards.filter(c => c.id !== id);
-    if (sb) sb.rpc('admin_delete_card', { p_id: id }); else save();
     render();
+    if (!sb) { save(); return; }
+    const { error } = await sb.rpc('admin_delete_card', { p_id: id });
+    if (error) { console.warn('не сожглось', error); await loadCards(); }
 }
 function archiveCard(c) { c.archivedAt = new Date().toISOString(); saveFlow(c); render(); }
 function unarchiveCard(c) { c.archivedAt = ''; saveFlow(c); render(); }
@@ -277,9 +281,9 @@ document.getElementById('saveBtn').onclick = async () => {
     }
     render(); modal.classList.remove('show');
 };
-delBtn.onclick = () => { if (!requireAdmin('сжигать карточки')) return; if (confirm('сжечь карточку?')) removeCard(editingId); modal.classList.remove('show'); };
+delBtn.onclick = async () => { if (!requireAdmin('сжигать карточки')) return; if (!confirm('сжечь карточку?')) return; await removeCard(editingId); modal.classList.remove('show'); };
 document.getElementById('cancelBtn').onclick = () => modal.classList.remove('show');
-document.getElementById('handSave').onclick = () => { const c = byId(handCardId); if (c) { c.who = hWho.value.trim(); saveFlow(c); render(); } hand.classList.remove('show'); };
+document.getElementById('handSave').onclick = async () => { const c = byId(handCardId); if (c) { c.who = hWho.value.trim(); await saveFlow(c); render(); } hand.classList.remove('show'); };
 document.getElementById('handSkip').onclick = () => hand.classList.remove('show');
 modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('show'); });
 hand.addEventListener('click', e => { if (e.target === hand) hand.classList.remove('show'); });
