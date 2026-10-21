@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark light">
+    <title>чё по каверам · «Fire Phoenix»</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <i class="ember" style="left:12%;animation-duration:14s;--sway:50px"></i>
+    <i class="ember" style="left:34%;animation-duration:18s;animation-delay:4s;--sway:-40px"></i>
+    <i class="ember" style="left:57%;animation-duration:12s;animation-delay:7s;--sway:30px"></i>
+    <i class="ember" style="left:76%;animation-duration:16s;animation-delay:2s;--sway:-55px"></i>
+    <i class="ember" style="left:91%;animation-duration:13s;animation-delay:9s;--sway:35px"></i>
+    
+    <header>
+        <div class="mast">
+            <h1>Чё по<br>каверам</h1>
+            <div class="stampBadge">кавер-банда<br>«Fire Phoenix Team»</div>
+        </div>
+        <p class="sub">трекер релизов · всё как на бумажке, только живое и в огне</p>
+        <div class="progress">
+            <div class="handbar"><span id="barFill"></span></div><span id="barText"></span>
+        </div>
+        <div class="filters">
+            <span>фильтр:</span>
+            <select id="fDdl" title="по дедлайну">
+                <option value="">дд: все</option>
+                <option value="over">горят (просрочено)</option>
+                <option value="week">ближайшие 7 дней</option>
+                <option value="none">без дедлайна</option>
+            </select>
+        </div>
+    </header>
+    
+    <main id="board"></main>
+    
+    <section id="archive" hidden>
+        <div class="archiveHead">
+            <span class="stamp">архив · закрыто</span>
+            <span class="archiveNote" id="archiveNote"></span>
+        </div>
+        <div id="archiveList" class="archiveGrid"></div>
+    </section>
+    
+    <p class="hint" id="hint">тягай бумажки между этапами · переписывать, добавлять и сжигать могут только админы</p>
+
+    <!-- Вот эта кнопка была пропущена, теперь она на месте -->
+    <button id="archiveBtn">архив</button>
+    <button id="themeBtn" title="переключить освещение"></button>
+    <button id="resetBtn">↺ начать с бумажки</button>
+    <button id="authBtn">войти</button>
+    
+    <div class="modal" id="modal">
+        <div class="panel">
+            <h2>карточка песни</h2>
+            <input id="fTitle" placeholder="название песни">
+            <input id="fWho" list="whoList" placeholder="кто работает (через запятую)">
+            <datalist id="whoList"></datalist>
+            <label class="fld"><span>дедлайн</span><input type="date" id="fDdlInput"></label>
+            <textarea id="fNote" rows="2" placeholder="пометка на полях (например: придётся переписывать)"></textarea>
+            <div class="row">
+                <button id="saveBtn">сохранить</button>
+                <button id="delBtn">сжечь</button>
+                <button id="cancelBtn">отмена</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="hand">
+        <div class="panel small">
+            <h2>передача</h2>
+            <p class="handNote" id="handText"></p>
+            <input id="hWho" list="whoList" placeholder="новый ответственный">
+            <div class="row">
+                <button id="handSave">назначить</button>
+                <button id="handSkip">оставить как было</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="login">
+        <div class="panel small">
+            <h2>вход для админа</h2>
+            <p class="handNote">остальные могут двигать карточки и без входа</p>
+            <input id="lEmail" type="email" autocomplete="username" placeholder="почта">
+            <input id="lPass" type="password" autocomplete="current-password" placeholder="пароль">
+            <div class="row">
+                <button id="lIn">войти</button>
+                <button id="lCancel">отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="grain"></div>
+    <script src="script.js"></script>
+</body>
+</html>
