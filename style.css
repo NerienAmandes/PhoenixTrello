@@ -1033,3 +1033,229 @@ h1 {
     padding: 2px 10px;
     transform: rotate(-6deg)
 }
+
+/* ===== мобильная версия =====
+   На узких экранах доска становится вертикальной колонкой, шапка компактнее,
+   декоративные номера колонок уменьшаются, фиксированные кнопки — в углах
+   с отступом, чтобы не лезть на карточки. */
+@media (max-width: 720px) {
+    :root {
+        --grain-op: 0;
+        --card-shadow: 0 3px 10px rgba(0, 0, 0, .35);
+        --card-shadow-hover: 0 8px 18px rgba(0, 0, 0, .45);
+    }
+
+    /* шапка */
+    header {
+        padding: 14px 16px 8px;
+    }
+    .mast {
+        gap: 10px;
+        align-items: flex-start;
+    }
+    h1 {
+        font-size: clamp(38px, 11vw, 56px);
+        line-height: .9;
+    }
+    .stampBadge {
+        font-size: 11px;
+        letter-spacing: .2em;
+        padding: 7px 12px;
+        margin-bottom: 0;
+    }
+    .sub {
+        font-size: 18px;
+        margin-top: 10px;
+    }
+    .progress {
+        width: 100%;
+        margin-top: 10px;
+    }
+    .handbar {
+        height: 12px;
+    }
+    #barText {
+        font-size: 17px;
+        margin-top: 6px;
+    }
+    .filters {
+        font-size: 17px;
+        gap: 8px;
+        margin-top: 10px;
+    }
+    .filters select {
+        font-size: 16px;
+        padding: 5px 14px;
+    }
+
+    /* доска — одна колонка, без горизонтального скролла */
+    #board {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        padding: 12px 14px 24px;
+        overflow-x: visible;
+    }
+    .col {
+        flex: 1 1 auto;
+        width: 100%;
+        min-height: auto;
+    }
+    /* большой «01» за карточками на телефоне бесполезен — оставляем
+       маленький номер в углу как пометку */
+    .col::before {
+        font-size: 36px;
+        top: -14px;
+        right: 4px;
+        opacity: .35;
+    }
+    .colHead {
+        margin-bottom: 10px;
+        gap: 8px;
+    }
+    .stamp {
+        font-size: 12px;
+        padding: 6px 10px 5px;
+        letter-spacing: .16em;
+    }
+    .count {
+        font-size: 18px;
+    }
+    .add {
+        font-size: 24px;
+    }
+
+    /* карточки чуть компактнее */
+    .card {
+        padding: 16px 14px 10px;
+    }
+    .card::before {
+        width: 70px;
+        height: 20px;
+        top: -10px;
+    }
+    .card .t {
+        font-size: 16px;
+    }
+    .card .t::before {
+        font-size: 15px;
+    }
+    .card .w,
+    .card .d,
+    .card .n {
+        font-size: 15px;
+    }
+    .cards {
+        gap: 14px;
+    }
+
+    /* фиксированные кнопки — меньше, плотнее в углах, чтобы не лезть
+       на шапку и нижние карточки */
+    #resetBtn,
+    #themeBtn,
+    #archiveBtn,
+    #authBtn {
+        font-size: 15px;
+        padding: 7px 13px;
+        backdrop-filter: blur(4px);
+    }
+    #authBtn {
+        top: 10px;
+        left: 10px;
+        max-width: 50vw;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        transform: rotate(0);
+    }
+    #themeBtn {
+        top: 10px;
+        right: 10px;
+        transform: rotate(0);
+    }
+    #archiveBtn {
+        bottom: 10px;
+        left: 10px;
+        transform: rotate(0);
+    }
+    #resetBtn {
+        bottom: 10px;
+        right: 10px;
+        transform: rotate(0);
+    }
+
+    /* на телефоне управление карточкой всегда видно — hover не работает */
+    .ctl {
+        opacity: 1;
+        margin-top: 6px;
+    }
+    .ctl button {
+        font-size: 16px;
+        padding: 4px 10px;
+    }
+
+    /* архив и подсказка */
+    #archive {
+        padding: 10px 14px 60px;
+    }
+    .archiveHead {
+        gap: 10px;
+    }
+    .archiveNote {
+        font-size: 17px;
+    }
+    .archiveGrid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+        margin-top: 16px;
+    }
+    .acard {
+        padding: 16px 14px 12px;
+    }
+    .acard .t {
+        font-size: 15px;
+    }
+    .acard .w,
+    .acard .c {
+        font-size: 15px;
+    }
+    .hint {
+        font-size: 16px;
+        padding: 4px 16px 28px;
+    }
+
+    /* модалки: на узком экране уменьшаем скотч сверху, чтобы не вылезал */
+    .panel {
+        padding: 30px 22px 22px;
+    }
+    .panel::before,
+    .panel::after {
+        width: 70px;
+        height: 22px;
+        top: -10px;
+    }
+    .panel input,
+    .panel textarea {
+        font-size: 19px;
+    }
+    .panel input[type="date"] {
+        font-size: 17px;
+    }
+}
+
+/* совсем узкие экраны — ещё компактнее */
+@media (max-width: 380px) {
+    h1 {
+        font-size: 38px;
+    }
+    #resetBtn,
+    #themeBtn,
+    #archiveBtn,
+    #authBtn {
+        font-size: 14px;
+        padding: 6px 11px;
+    }
+    .card {
+        padding: 14px 12px 9px;
+    }
+}
