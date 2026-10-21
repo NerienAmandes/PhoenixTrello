@@ -71,14 +71,16 @@ async function refreshAuth() {
     admin = me ? !!(await sb.rpc('is_admin')).data : false;
     authBtn.textContent = admin ? `админ: ${me.email}` : me ? `вошел: ${me.email}` : 'войти';
     resetBtn.hidden = !admin;
-    if (admin && !state.cards.length) await seedFromPaper();
     render();
 }
 /* Спрашивает права перед действием. false — значит действие отменено. */
-function requireAdmin() {
+function requireAdmin(act) {
     if (admin) return true;
-    if (me) { alert('переписывать и сжигать карточки может только админ'); return false; }
-    if (sb) { loginModal.classList.add('show'); lEmail.focus(); return false; }
+    if (me) { alert(`${act} может только админ`); return false; }
+    if (sb) {
+        loginNote.textContent = `${act} может только админ. Войди — и кнопки появятся.`;
+        openLogin(); return false;
+    }
     alert('сначала впиши Project URL и anon key в настройках Supabase');
     return false;
 }
@@ -92,10 +94,11 @@ async function signIn() {
     loginModal.classList.remove('show'); lPass.value = '';
 }
 function openLogin() { loginModal.classList.add('show'); lEmail.focus(); }
+/* Один запрос вместо тридцати: доска не дёргается на каждый карточный апдейт. */
 async function seedFromPaper() {
-    state.cards = seedCards();
-    for (const c of state.cards) await saveCard(c);
-    render();
+    const { error } = await sb.rpc('admin_seed_cards');
+    if (error) { console.warn('посев не удался', error); return; }
+    await loadCards();
 }
 
 async function initStore() {
@@ -106,6 +109,9 @@ async function initStore() {
             sb.auth.onAuthStateChange(() => refreshAuth());
             await refreshAuth();
             await loadCards();
+            /* бумажный список заливаем ровно один раз — когда база ещё пуста.
+               Проверка после loadCards, иначе посев сбрасывал бы этапы при каждой перезагрузке. */
+            if (admin && !state.cards.length) await seedFromPaper();
             sb.channel('cards-changes')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'cards' }, () => loadCards())
                 .subscribe();
@@ -115,7 +121,9 @@ async function initStore() {
     fallbackLocal();
 }
 async function loadCards() {
-    const { data, error } = await sb.from('cards').select('*');
+    /* сортировка обязательна: без неё postgres отдаёт строки в произвольном
+       порядке и после перезагрузки карточки выглядят перетасованными */
+    const { data, error } = await sb.from('cards').select('*').order('title');
     if (error) { console.warn('supabase select error', error); return; }
     state.cards = data.map(r => ({ id: r.id, stage: r.stage, title: r.title, note: r.note || '', who: r.who || '', ddl: r.ddl || '', doneAt: r.done_at || '', archivedAt: r.archived_at || '' }));
     render();
@@ -181,8 +189,10 @@ function render() {
     const arch = state.cards.filter(c => c.archivedAt).sort((a, b) => (b.archivedAt || '').localeCompare(a.archivedAt || ''));
     board.innerHTML = ''; STAGES.forEach(st => {
         const cards = active.filter(c => c.stage === st.id);
+        /* кнопка «+» видна всем: у кого нет прав — приглушена и с замочком */
+        const addBtn = `<button class="add${admin ? '' : ' locked'}" data-add="${st.id}" title="${admin ? 'добавить песню на этап' : 'добавлять песни может только админ'}">+</button>`;
         const col = document.createElement('section'); col.className = 'col'; col.dataset.stage = st.id; col.dataset.num = '0' + st.id;
-        col.innerHTML = `<div class="colHead"><span class="stamp">${st.id} · ${st.name}</span><span class="count">${cards.length}</span>${admin ? `<button class="add" data-add="${st.id}" title="добавить песню">+</button>` : ''}</div><div class="cards" data-stage="${st.id}"></div>`;
+        col.innerHTML = `<div class="colHead"><span class="stamp">${st.id} · ${st.name}</span><span class="count">${cards.length}</span>${addBtn}</div><div class="cards" data-stage="${st.id}"></div>`;
         const list = col.querySelector('.cards'); cards.forEach(c => list.appendChild(cardEl(c))); board.appendChild(col);
     });
     /* прогресс считается только по архивным */
@@ -222,25 +232,19 @@ function sparks() {
 }
 board.addEventListener('click', e => {
     const add = e.target.closest('[data-add]'); if (add) {
-        /* создание новой карточки — только админ */
-        if (!requireAdmin()) return;
+        /* добавление песни — только админ, остальным покажем окно входа */
+        if (!requireAdmin('добавлять песни')) return;
         openEditor(null, +add.dataset.add); return;
     }
     const btn = e.target.closest('.ctl button'); if (btn) {
         const id = btn.closest('.card').dataset.id, c = byId(id);
-        if (btn.dataset.act === 'edit') {
-            /* редактирование — только админ */
-            if (!requireAdmin()) return;
-            openEditor(id);
-        }
+        if (btn.dataset.act === 'edit') openEditor(id);
         else if (btn.dataset.act === 'archive') archiveCard(c);
         else move(c, c.stage + (btn.dataset.act === 'right' ? 1 : -1)); return;
     }
-    const card = e.target.closest('.card'); if (card) {
-        /* клик по карточке для редактирования — только админ */
-        if (!requireAdmin()) return;
-        openEditor(card.dataset.id);
-    }
+    /* клик по бумажке переписывает её, а это право админа;
+       остальным просто ничего не делаем — зачем ругаться на обычное движение по доске */
+    const card = e.target.closest('.card'); if (card && admin) openEditor(card.dataset.id);
 });
 board.addEventListener('dragstart', e => { const c = e.target.closest('.card'); if (!c) return; e.dataTransfer.setData('text/plain', c.dataset.id); c.classList.add('dragging'); });
 board.addEventListener('dragend', () => { document.querySelectorAll('.dragging,.over').forEach(x => x.classList.remove('dragging', 'over')); });
@@ -251,7 +255,7 @@ board.addEventListener('drop', e => {
 });
 const modal = document.getElementById('modal'), fTitle = document.getElementById('fTitle'), fNote = document.getElementById('fNote'), fWho = document.getElementById('fWho'), fDdlInput = document.getElementById('fDdlInput'), whoList = document.getElementById('whoList'), delBtn = document.getElementById('delBtn');
 const hand = document.getElementById('hand'), handText = document.getElementById('handText'), hWho = document.getElementById('hWho');
-const loginModal = document.getElementById('login'), lEmail = document.getElementById('lEmail'), lPass = document.getElementById('lPass'), lIn = document.getElementById('lIn');
+const loginModal = document.getElementById('login'), lEmail = document.getElementById('lEmail'), lPass = document.getElementById('lPass'), lIn = document.getElementById('lIn'), loginNote = document.getElementById('loginNote');
 const authBtn = document.getElementById('authBtn'), resetBtn = document.getElementById('resetBtn');
 let editingId = null, newStage = 1, handCardId = null;
 function openEditor(id, stage) {
@@ -273,7 +277,7 @@ document.getElementById('saveBtn').onclick = async () => {
     }
     render(); modal.classList.remove('show');
 };
-delBtn.onclick = () => { if (!requireAdmin()) return; if (confirm('сжечь карточку?')) removeCard(editingId); modal.classList.remove('show'); };
+delBtn.onclick = () => { if (!requireAdmin('сжигать карточки')) return; if (confirm('сжечь карточку?')) removeCard(editingId); modal.classList.remove('show'); };
 document.getElementById('cancelBtn').onclick = () => modal.classList.remove('show');
 document.getElementById('handSave').onclick = () => { const c = byId(handCardId); if (c) { c.who = hWho.value.trim(); saveFlow(c); render(); } hand.classList.remove('show'); };
 document.getElementById('handSkip').onclick = () => hand.classList.remove('show');
@@ -293,7 +297,7 @@ authBtn.onclick = async () => {
 };
 
 document.getElementById('resetBtn').onclick = async () => {
-    if (!requireAdmin()) return;
+    if (!requireAdmin('сбрасывать доску')) return;
     if (confirm('вернуть всё как на бумажке? текущие правки сгорят')) {
         if (sb) { await sb.rpc('admin_clear_cards'); await seedFromPaper(); }
         else { state.cards = seedCards(); save(); render(); }

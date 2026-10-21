@@ -348,6 +348,23 @@ h1 {
     color: var(--verm)
 }
 
+/* кнопка добавления у тех, кому нельзя — приглушена, но остаётся на виду */
+.add.locked {
+    opacity: .4
+}
+
+.add.locked::after {
+    content: '\1F512';
+    font-size: 11px;
+    vertical-align: super;
+    margin-left: 2px
+}
+
+.add.locked:hover {
+    opacity: .9;
+    color: var(--gold-text)
+}
+
 .cards {
     display: flex;
     flex-direction: column;
