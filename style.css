@@ -816,6 +816,51 @@ h1 {
     color: var(--ink)
 }
 
+/* ===== вход админа ===== */
+#lIn {
+    flex: 1;
+    background: none;
+    border: 2.5px solid var(--verm-deep);
+    color: var(--verm-deep);
+    font-family: Oswald;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .14em;
+    font-size: 15px;
+    padding: 13px 18px;
+    border-radius: 8px 3px 9px 4px;
+    transform: rotate(-1deg);
+    cursor: pointer;
+    transition: .15s
+}
+
+#lIn:hover:not(:disabled) {
+    background: var(--verm-deep);
+    color: var(--paper)
+}
+
+#lIn:disabled {
+    opacity: .45;
+    cursor: progress
+}
+
+#lCancel {
+    background: none;
+    border: 1.5px dashed rgba(38, 28, 20, .4);
+    border-radius: 99px;
+    padding: 11px 18px;
+    font-family: Caveat, cursive;
+    font-size: 19px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: .15s
+}
+
+#lCancel:hover {
+    color: var(--verm-deep);
+    border-color: var(--verm-deep)
+}
+
 .spark {
     position: fixed;
     width: 7px;
