@@ -1,0 +1,27 @@
+name: не даём Supabase уснуть
+
+# Публичные репозитории не тратят минуты Actions, поэтому пинг можно гонять хоть каждый час.
+# Сдвиг на 17 минут нужен, чтобы не попадать в пиковую очередь GitHub в начале часа.
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch: # чтобы проверить вручную, не дожидаясь расписания
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: один запрос к базе
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          code=$(curl -sS -o /dev/null -w '%{http_code}' \
+            "$SUPABASE_URL/rest/v1/cards?select=id&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY")
+          echo "ответ базы: $code"
+          case "$code" in
+            2*|4*) echo "проект живой" ;;
+            *) echo "проект отвечает кодом $code — глянь в дашборд Supabase" ;;
+          esac
