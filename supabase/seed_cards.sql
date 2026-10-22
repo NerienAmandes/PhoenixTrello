@@ -31,7 +31,7 @@ insert into public.cards (id, stage, title, note) values
     ('seed21', 3, 'Run Rabbit',            ''),
     ('seed22', 3, 'Сердце байта',          ''),
     ('seed23', 3, 'Azari — Seapegoat',     ''),
-    /* 4 · сведение и тюн */
+    /* 4 · сведение, тюн и тайм */
     ('seed24', 4, 'Saija Boys',            'наверное надо'),
     /* 5 · арт */
     ('seed25', 5, 'Halsey — Control',      ''),

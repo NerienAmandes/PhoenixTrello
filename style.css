@@ -601,7 +601,6 @@ h1 {
     transform: rotate(-.3deg)
 }
 
-#resetBtn,
 #themeBtn,
 #archiveBtn,
 #authBtn {
@@ -624,12 +623,6 @@ h1 {
     transform: rotate(1.5deg)
 }
 
-#resetBtn {
-    bottom: 16px;
-    right: 20px;
-    transform: rotate(-1deg)
-}
-
 #archiveBtn {
     bottom: 16px;
     left: 20px;
@@ -642,7 +635,6 @@ h1 {
     transform: rotate(-1deg)
 }
 
-#resetBtn:hover,
 #themeBtn:hover,
 #archiveBtn:hover,
 #authBtn:hover {
@@ -1151,7 +1143,6 @@ h1 {
 
     /* фиксированные кнопки — меньше, плотнее в углах, чтобы не лезть
        на шапку и нижние карточки */
-    #resetBtn,
     #themeBtn,
     #archiveBtn,
     #authBtn {
@@ -1176,11 +1167,6 @@ h1 {
     #archiveBtn {
         bottom: 10px;
         left: 10px;
-        transform: rotate(0);
-    }
-    #resetBtn {
-        bottom: 10px;
-        right: 10px;
         transform: rotate(0);
     }
 
@@ -1248,7 +1234,6 @@ h1 {
     h1 {
         font-size: 38px;
     }
-    #resetBtn,
     #themeBtn,
     #archiveBtn,
     #authBtn {

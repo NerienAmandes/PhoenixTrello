@@ -6,6 +6,7 @@
    ========================================================= */
 
 /* ---------- 1. Таблица релизов ---------- */
+/* stage 1..6: запись вокала, отслушка, правки, сведение+тюн+тайм, арт, видео */
 create table if not exists public.cards (
     id          text primary key,
     title       text not null,
@@ -16,6 +17,38 @@ create table if not exists public.cards (
     done_at     timestamptz,
     archived_at timestamptz
 );
+
+/* ---------- 1b. Сверка границы этапов ----------
+   Этап «Тайм» пробовали делать отдельным (тогда было 7), но решено
+   слить сведение, тюн и тайм в одну ступень. Если миграция на 7 уже
+   прогонялась, карточки лежат со сдвинутыми номерами — откатываем.
+
+   Порядок важен: сначала верхний этап, потом следующий, иначе видео
+   съехало бы в «арт» дважды. Шаг читает текущую границу из
+   констрейнта и срабатывает ровно один раз — повторный запуск
+   ничего не испортит. */
+do $$
+declare
+    old_max int;
+begin
+    select coalesce((regexp_match(pg_get_constraintdef(oid), 'stage <= (\d+)'))
+                         [1]::int, 6)
+      into old_max
+      from pg_constraint
+     where conname = 'cards_stage_check'
+       and conrelid = 'public.cards'::regclass;
+
+    /* сначала ослабляем границу, иначе видео не влезло бы в 6 */
+    alter table public.cards drop constraint if exists cards_stage_check;
+
+    if old_max = 7 then
+        update public.cards set stage = 6 where stage = 7;
+        update public.cards set stage = 5 where stage = 6;
+    end if;
+
+    alter table public.cards add constraint cards_stage_check
+        check (stage between 1 and 6);
+end $$;
 
 /* ---------- 2. Админы: кому можно переписывать и сжигать карточки ---------- */
 create table if not exists public.admins (
@@ -125,25 +158,14 @@ begin
 end;
 $$;
 
-/* Полный сброс доски перед тем, как залить бумажный список заново. */
-create or replace function public.admin_clear_cards()
-    returns void
-    language plpgsql
-    security definer
-set search_path = public
-as $$
-begin
-    if not public.is_admin() then
-        raise exception 'прав на запись нет' using errcode = '42501';
-    end if;
-
-    delete from public.cards;
-end;
-$$;
-
 grant execute on function public.admin_upsert_card(text, int, text, text, text, date, timestamptz, timestamptz) to authenticated;
 grant execute on function public.admin_delete_card(text)  to authenticated;
-grant execute on function public.admin_clear_cards()      to authenticated;
+
+/* Полного сброса доски больше нет: кнопка «начать с бумажки» убрана,
+   а вместе с ней и функция admin_clear_cards, которая стирала все
+   карточки разом. Снос забирает и её гранты заодно, поэтому revoke
+   не нужен — на чистой базе функции ещё нет и он бы упал с ошибкой. */
+drop function if exists public.admin_clear_cards();
 
 /* ---------- 6a. Посев бумажного списка ---------- */
 create or replace function public.admin_seed_cards()

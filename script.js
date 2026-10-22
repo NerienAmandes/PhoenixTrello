@@ -12,7 +12,7 @@ const STAGES = [
     { id: 1, name: 'Запись вокала' },
     { id: 2, name: 'Отслушка' },
     { id: 3, name: 'Правки' },
-    { id: 4, name: 'Сведение и тюн' },
+    { id: 4, name: 'Сведение, тюн и тайм' },
     { id: 5, name: 'Арт' },
     { id: 6, name: 'Видео' }];
 const FINAL = STAGES.length;
@@ -74,7 +74,6 @@ async function refreshAuth() {
     me = data.session?.user ?? null;
     admin = me ? !!(await sb.rpc('is_admin')).data : false;
     authBtn.textContent = admin ? `админ: ${me.email}` : me ? `вошел: ${me.email}` : 'войти';
-    resetBtn.hidden = !admin;
     render();
 }
 /* Спрашивает права перед действием. false — значит действие отменено. */
@@ -260,7 +259,7 @@ board.addEventListener('drop', e => {
 const modal = document.getElementById('modal'), fTitle = document.getElementById('fTitle'), fNote = document.getElementById('fNote'), fWho = document.getElementById('fWho'), fDdlInput = document.getElementById('fDdlInput'), whoList = document.getElementById('whoList'), delBtn = document.getElementById('delBtn');
 const hand = document.getElementById('hand'), handText = document.getElementById('handText'), hWho = document.getElementById('hWho');
 const loginModal = document.getElementById('login'), lEmail = document.getElementById('lEmail'), lPass = document.getElementById('lPass'), lIn = document.getElementById('lIn'), loginNote = document.getElementById('loginNote');
-const authBtn = document.getElementById('authBtn'), resetBtn = document.getElementById('resetBtn');
+const authBtn = document.getElementById('authBtn');
 let editingId = null, newStage = 1, handCardId = null;
 function openEditor(id, stage) {
     editingId = id;
@@ -301,11 +300,4 @@ authBtn.onclick = async () => {
     openLogin();
 };
 
-document.getElementById('resetBtn').onclick = async () => {
-    if (!requireAdmin('сбрасывать доску')) return;
-    if (confirm('вернуть всё как на бумажке? текущие правки сгорят')) {
-        if (sb) { await sb.rpc('admin_clear_cards'); await seedFromPaper(); }
-        else { state.cards = seedCards(); save(); render(); }
-    }
-};
 initStore();

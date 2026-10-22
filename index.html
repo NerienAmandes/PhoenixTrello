@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,16 +8,19 @@
     <title>чё по каверам · «Fire Phoenix»</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Caveat:wght@500;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <i class="ember" style="left:12%;animation-duration:14s;--sway:50px"></i>
     <i class="ember" style="left:34%;animation-duration:18s;animation-delay:4s;--sway:-40px"></i>
     <i class="ember" style="left:57%;animation-duration:12s;animation-delay:7s;--sway:30px"></i>
     <i class="ember" style="left:76%;animation-duration:16s;animation-delay:2s;--sway:-55px"></i>
     <i class="ember" style="left:91%;animation-duration:13s;animation-delay:9s;--sway:35px"></i>
-    
+
     <header>
         <div class="mast">
             <h1>Чё по<br>каверам</h1>
@@ -36,9 +40,9 @@
             </select>
         </div>
     </header>
-    
+
     <main id="board"></main>
-    
+
     <section id="archive" hidden>
         <div class="archiveHead">
             <span class="stamp">архив · закрыто</span>
@@ -46,15 +50,14 @@
         </div>
         <div id="archiveList" class="archiveGrid"></div>
     </section>
-    
-    <p class="hint" id="hint">тягай бумажки между этапами — это доступно всем · «+» на этапе добавляет песню, но только для админа</p>
 
-    <!-- Вот эта кнопка была пропущена, теперь она на месте -->
+    <p class="hint" id="hint">тягай бумажки между этапами — это доступно всем · «+» на этапе добавляет песню, но только
+        для админа</p>
+
     <button id="archiveBtn">архив</button>
     <button id="themeBtn" title="переключить освещение"></button>
-    <button id="resetBtn">↺ начать с бумажки</button>
     <button id="authBtn">войти</button>
-    
+
     <div class="modal" id="modal">
         <div class="panel">
             <h2>карточка песни</h2>
@@ -70,7 +73,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="modal" id="hand">
         <div class="panel small">
             <h2>передача</h2>
@@ -82,7 +85,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="modal" id="login">
         <div class="panel small">
             <h2>вход для админа</h2>
@@ -99,4 +102,5 @@
     <div class="grain"></div>
     <script src="script.js"></script>
 </body>
+
 </html>
