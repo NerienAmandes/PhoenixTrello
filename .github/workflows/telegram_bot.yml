@@ -1,0 +1,40 @@
+name: бот дедлайнов PhoenixTrello
+
+# Запускаем каждый день: внутри функции у каждой карточки свой таймер.
+#   ддл дальше 7 дней — раз в неделю (только по понедельникам)
+#   ддл ≤ 7 дней        — раз в 2 дня
+#   просрочено           — раз в 4 дня
+#   без ддл              — раз в неделю (только по понедельникам)
+# Время — 07:03 UTC, это 10:03 по Москве.
+# Минута 3 — чтобы не попадать в пиковую очередь GitHub.
+on:
+  schedule:
+    - cron: '3 7 * * *'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Отправить всё, даже если по карточке интервал ещё не вышел'
+        required: false
+        default: 'false'
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: попросить бота собрать и разослать дайджест
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          BOT_SECRET: ${{ secrets.BOT_SECRET }}
+          FORCE_INPUT: ${{ inputs.force }}
+        run: |
+          # Плановый запуск — тихо: функция сама решает, кому и когда писать.
+          # Ручной запуск — по умолчанию тоже тихо, но можно форсировать.
+          force="false"
+          if [ "$FORCE_INPUT" = "true" ]; then force="true"; fi
+          curl -sS -X POST "$SUPABASE_URL/functions/v1/telegram-bot/dispatch" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            -H "x-bot-secret: $BOT_SECRET" \
+            -d "{\"force\": $force}"
+          echo
