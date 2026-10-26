@@ -39,6 +39,12 @@
                 <option value="none">без дедлайна</option>
             </select>
         </div>
+        <div class="legend">
+            <span>приоритет:</span>
+            <span class="lg" data-p="3"><i></i><i></i><i></i>высокий</span>
+            <span class="lg" data-p="2"><i></i><i></i><i></i>обычный</span>
+            <span class="lg" data-p="1"><i></i><i></i><i></i>низкий</span>
+        </div>
     </header>
 
     <main id="board"></main>
@@ -65,6 +71,11 @@
             <input id="fWho" list="whoList" placeholder="кто работает (через запятую)">
             <datalist id="whoList"></datalist>
             <label class="fld"><span>дедлайн</span><input type="date" id="fDdlInput"></label>
+            <label class="fld"><span>приоритет</span><select id="fPri">
+                    <option value="1">низкий</option>
+                    <option value="2" selected>обычный</option>
+                    <option value="3">высокий</option>
+                </select></label>
             <textarea id="fNote" rows="2" placeholder="пометка на полях (например: придётся переписывать)"></textarea>
             <div class="row">
                 <button id="saveBtn">сохранить</button>

@@ -35,6 +35,13 @@
     --grain-op: .06;
     --ctl-hover: rgba(38, 28, 20, .08);
     --panel-shadow: 0 30px 70px rgba(0, 0, 0, .6);
+    /* приоритет: три точки, заливка по уровню. Карточка всегда светлая,
+       поэтому цвета точек фиксированные и не зависят от темы */
+    --prio-hi: #c0391f;
+    --prio-mid: #a5762a;
+    --prio-lo: #8d7f6b;
+    /* пустая точка легенды — по теме, легенда живёт на фоне доски */
+    --prio-off: rgba(203, 184, 150, .25);
 }
 
 body.light {
@@ -71,6 +78,7 @@ body.light {
     --grain-op: .05;
     --ctl-hover: rgba(38, 28, 20, .06);
     --panel-shadow: 0 24px 60px rgba(120, 84, 40, .28);
+    --prio-off: rgba(38, 28, 20, .16);
 }
 
 * {
@@ -262,6 +270,44 @@ h1 {
     font-size: 16px
 }
 
+/* ===== легенда приоритетов ===== */
+.legend {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    font-family: Caveat, cursive;
+    font-size: 18px;
+    color: var(--dim)
+}
+
+.legend .lg {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px
+}
+
+.legend .lg i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--prio-off);
+    display: inline-block
+}
+
+.legend .lg[data-p="3"] i:nth-child(-n+3) {
+    background: var(--prio-hi)
+}
+
+.legend .lg[data-p="2"] i:nth-child(-n+2) {
+    background: var(--prio-mid)
+}
+
+.legend .lg[data-p="1"] i:nth-child(1) {
+    background: var(--prio-lo)
+}
+
 #board {
     display: flex;
     gap: 30px;
@@ -290,6 +336,84 @@ h1 {
     position: relative;
     flex: 0 0 260px;
     min-height: 56vh
+}
+
+/* ===== оттенок бумаги по отделам =====
+   У каждого этапа свой приглушённый тон бумаги — не крикливый, но
+   различимый: светлее/теплее/холоднее соседей, все в общей палитре.
+   Карточка берёт цвет от своей колонки, поэтому при переносе
+   в другой отдел перекрашивается сама. */
+.col[data-stage="1"] {
+    --card-paper: #eadfc0;
+    --card-paper-ok: #e4e3c6;
+    --card-tape: linear-gradient(100deg, rgba(226, 196, 132, .85), rgba(200, 166, 100, .7))
+}
+
+.col[data-stage="2"] {
+    --card-paper: #e1dbc7;
+    --card-paper-ok: #dde0c6;
+    --card-tape: linear-gradient(100deg, rgba(214, 206, 172, .85), rgba(186, 176, 140, .7))
+}
+
+.col[data-stage="3"] {
+    --card-paper: #e6d2c2;
+    --card-paper-ok: #e2d7c8;
+    --card-tape: linear-gradient(100deg, rgba(226, 182, 160, .85), rgba(198, 152, 130, .7))
+}
+
+.col[data-stage="4"] {
+    --card-paper: #d8d3cb;
+    --card-paper-ok: #d9dccb;
+    --card-tape: linear-gradient(100deg, rgba(198, 194, 188, .85), rgba(168, 164, 158, .7))
+}
+
+.col[data-stage="5"] {
+    --card-paper: #d7dac2;
+    --card-paper-ok: #dbdfc4;
+    --card-tape: linear-gradient(100deg, rgba(198, 210, 168, .85), rgba(168, 180, 138, .7))
+}
+
+.col[data-stage="6"] {
+    --card-paper: #d7cdd8;
+    --card-paper-ok: #d8d5cc;
+    --card-tape: linear-gradient(100deg, rgba(204, 184, 206, .85), rgba(174, 154, 178, .7))
+}
+
+/* светлая тема — те же тона, но на белой бумаге */
+body.light .col[data-stage="1"] {
+    --card-paper: #f7edd5;
+    --card-paper-ok: #eff0da;
+    --card-tape: linear-gradient(100deg, rgba(232, 204, 142, .9), rgba(208, 176, 112, .8))
+}
+
+body.light .col[data-stage="2"] {
+    --card-paper: #f3eee0;
+    --card-paper-ok: #edefdc;
+    --card-tape: linear-gradient(100deg, rgba(222, 214, 182, .9), rgba(194, 184, 150, .8))
+}
+
+body.light .col[data-stage="3"] {
+    --card-paper: #f7e6db;
+    --card-paper-ok: #eee3d8;
+    --card-tape: linear-gradient(100deg, rgba(232, 194, 176, .9), rgba(206, 166, 150, .8))
+}
+
+body.light .col[data-stage="4"] {
+    --card-paper: #eeeae4;
+    --card-paper-ok: #e6e9dd;
+    --card-tape: linear-gradient(100deg, rgba(210, 206, 202, .9), rgba(180, 176, 174, .8))
+}
+
+body.light .col[data-stage="5"] {
+    --card-paper: #ecf0dd;
+    --card-paper-ok: #e8ecd6;
+    --card-tape: linear-gradient(100deg, rgba(206, 216, 176, .9), rgba(176, 188, 146, .8))
+}
+
+body.light .col[data-stage="6"] {
+    --card-paper: #f1e8f0;
+    --card-paper-ok: #e8e4e6;
+    --card-tape: linear-gradient(100deg, rgba(216, 198, 218, .9), rgba(188, 168, 194, .8))
 }
 
 .col::before {
@@ -382,12 +506,12 @@ h1 {
 
 .card {
     position: relative;
-    background: var(--paper) var(--noise);
+    background: var(--card-paper, var(--paper)) var(--noise);
     border-radius: 4px;
     padding: 20px 16px 10px;
     cursor: grab;
     transform: rotate(var(--rot, 0deg));
-    transition: transform .18s, box-shadow .18s, opacity .2s, filter .2s;
+    transition: transform .18s, box-shadow .18s, opacity .2s, filter .2s, background .3s;
     box-shadow: var(--card-shadow)
 }
 
@@ -419,13 +543,9 @@ h1 {
     width: 80px;
     height: 24px;
     transform: translateX(-50%) rotate(var(--tape-r, -2deg));
-    background: var(--tape);
+    background: var(--card-tape, var(--tape));
     box-shadow: 0 2px 6px rgba(0, 0, 0, .18);
     clip-path: polygon(0 4%, 4% 0, 96% 2%, 100% 6%, 99% 96%, 95% 100%, 5% 98%, 1% 94%)
-}
-
-.col[data-stage="6"] .card::before {
-    background: var(--tape-gold)
 }
 
 .card:hover {
@@ -444,7 +564,7 @@ h1 {
 }
 
 .card.early {
-    background: var(--paper-ok) var(--noise)
+    background: var(--card-paper-ok, var(--paper-ok)) var(--noise)
 }
 
 .card.early::before {
@@ -465,6 +585,48 @@ h1 {
     padding: 2px 10px;
     transform: rotate(-6deg);
     background: transparent
+}
+
+/* ===== приоритет карточки =====
+   Три точки в углу: закрашено столько, какой приоритет.
+   Бумага у карточки всегда светлая, поэтому цвета точек
+   фиксированные и от темы не зависят. */
+.card .head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px
+}
+
+.prio {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 3px;
+    padding-top: 5px
+}
+
+.prio i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgba(38, 28, 20, .13)
+}
+
+.card[data-p="3"] .prio i:nth-child(-n+3) {
+    background: var(--prio-hi)
+}
+
+.card[data-p="2"] .prio i:nth-child(-n+2) {
+    background: var(--prio-mid)
+}
+
+.card[data-p="1"] .prio i:nth-child(1) {
+    background: var(--prio-lo)
+}
+
+/* у важных карточек заголовок плотнее */
+.card[data-p="3"] .t {
+    font-weight: 700
 }
 
 .card .t {
@@ -728,6 +890,28 @@ h1 {
 .panel input[type="date"] {
     font-size: 20px;
     color-scheme: light
+}
+
+.panel select {
+    font-family: Caveat, cursive;
+    font-size: 21px;
+    color: var(--ink);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid rgba(38, 28, 20, .28);
+    padding: 4px 2px;
+    margin-bottom: 0;
+    cursor: pointer
+}
+
+.panel select:focus {
+    outline: none;
+    border-color: var(--verm)
+}
+
+.panel option {
+    color: #261c14;
+    background: #fdf8ec
 }
 
 .panel ::placeholder {
@@ -1079,6 +1263,16 @@ h1 {
         font-size: 16px;
         padding: 5px 14px;
     }
+    .legend {
+        font-size: 16px;
+        gap: 12px;
+        margin-top: 8px;
+    }
+    .legend .lg i,
+    .prio i {
+        width: 6px;
+        height: 6px;
+    }
 
     /* доска — одна колонка, без горизонтального скролла */
     #board {
@@ -1226,6 +1420,9 @@ h1 {
     }
     .panel input[type="date"] {
         font-size: 17px;
+    }
+    .panel select {
+        font-size: 18px;
     }
 }
 

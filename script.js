@@ -16,6 +16,9 @@ const STAGES = [
     { id: 5, name: 'Арт' },
     { id: 6, name: 'Видео' }];
 const FINAL = STAGES.length;
+/* приоритет карточки: 1 — низкий, 2 — обычный, 3 — высокий.
+   Ставит только админ, участникам база не даёт эту колонку менять. */
+const PRIO_NAMES = { 1: 'низкий', 2: 'обычный', 3: 'высокий' };
 const MONTHS = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const fmtDdl = s => { const d = new Date(s + 'T00:00:00'); return d.getDate() + ' ' + MONTHS[d.getMonth()]; };
@@ -23,7 +26,7 @@ const dayEnd = s => new Date(s + 'T23:59:59');
 const isEarly = c => c.stage === FINAL && !!c.doneAt && !!c.ddl && new Date(c.doneAt) <= dayEnd(c.ddl);
 const isLate = c => !!c.ddl && c.stage !== FINAL && new Date() > dayEnd(c.ddl);
 function seedCards() {
-    const s = []; let i = 0; const add = (stage, t, n) => s.push({ id: 'seed' + (++i), stage, title: t, note: n || '', who: '', ddl: '', doneAt: '', archivedAt: '' });
+    const s = []; let i = 0; const add = (stage, t, n) => s.push({ id: 'seed' + (++i), stage, title: t, note: n || '', who: '', ddl: '', doneAt: '', archivedAt: '', priority: 2 });
     [['Ирис Ado'], ['Разбеги'], ['Brain Rot'], ['Bad Apple'], ['Киберпанк'], ['Песня про самовыпил'], ['Клемобис'], ['Парад самонадеянности'], ['Тела'], ['Fuck you'], ['Dance forever'], ['Феникс'], ["Don't come crying"], ['Magic Ado'], ['AiAiAi (Ado)']].forEach(x => add(1, x[0]));
     add(2, 'RPG', 'тайм'); add(2, 'Kawaii to басен', 'так меняется же?'); add(2, 'Land of the dead', 'придётся переписывать');
     [['All save Challenge'], ['Xy'], ['Run Rabbit'], ['Сердце байта'], ['Azari — Seapegoat']].forEach(x => add(3, x[0]));
@@ -53,7 +56,8 @@ async function saveCard(c) {
     const { error } = await sb.rpc('admin_upsert_card', {
         p_id: c.id, p_stage: c.stage, p_title: c.title, p_note: c.note || '',
         p_who: c.who || '', p_ddl: c.ddl || null,
-        p_done_at: c.doneAt || null, p_archived_at: c.archivedAt || null
+        p_done_at: c.doneAt || null, p_archived_at: c.archivedAt || null,
+        p_priority: c.priority || 2
     });
     if (error) { await loadCards(); return; }
 }
@@ -128,7 +132,7 @@ async function loadCards() {
        порядке и после перезагрузки карточки выглядят перетасованными */
     const { data, error } = await sb.from('cards').select('*').order('title');
     if (error) { console.warn('supabase select error', error); return; }
-    state.cards = data.map(r => ({ id: r.id, stage: r.stage, title: r.title, note: r.note || '', who: r.who || '', ddl: r.ddl || '', doneAt: r.done_at || '', archivedAt: r.archived_at || '' }));
+    state.cards = data.map(r => ({ id: r.id, stage: r.stage, title: r.title, note: r.note || '', who: r.who || '', ddl: r.ddl || '', doneAt: r.done_at || '', archivedAt: r.archived_at || '', priority: r.priority ?? 2 }));
     render();
 }
 function fallbackLocal() {
@@ -176,12 +180,22 @@ function acardEl(c) {
     return d;
 }
 
+/* Порядок внутри отдела: сначала приоритет (выше — выше),
+   при равном — ближайший дедлайн, потом название, чтобы порядок не прыгал. */
+function byPriority(a, b) {
+    const p = (b.priority || 2) - (a.priority || 2);
+    if (p) return p;
+    const ad = a.ddl || '9999-12-31', bd = b.ddl || '9999-12-31';
+    if (ad !== bd) return ad < bd ? -1 : 1;
+    return a.title.localeCompare(b.title, 'ru');
+}
 function cardEl(c) {
     const d = document.createElement('div'); d.className = 'card'; d.draggable = true; d.dataset.id = c.id;
+    const pr = [1, 2, 3].includes(c.priority) ? c.priority : 2; d.dataset.p = pr;
     if (!matches(c)) d.classList.add('dim');
     if (isEarly(c)) d.classList.add('early');
     if (isLate(c)) d.classList.add('late');
-    d.innerHTML = `<div class="t"></div>${c.who ? '<div class="w"></div>' : ''}${c.ddl ? '<div class="d"></div>' : ''}${c.note ? '<div class="n"></div>' : ''}<div class="ctl"><button data-act="left" title="на этап назад">←</button>${c.stage === FINAL ? '<button data-act="archive" title="в архив (завершено)">✓</button>' : ''}${admin ? '<button data-act="edit" title="переписать">✎</button>' : ''}<button data-act="right" title="на этап дальше">→</button></div>`;
+    d.innerHTML = `<div class="head"><div class="t"></div><div class="prio" title="приоритет: ${PRIO_NAMES[pr]}"><i></i><i></i><i></i></div></div>${c.who ? '<div class="w"></div>' : ''}${c.ddl ? '<div class="d"></div>' : ''}${c.note ? '<div class="n"></div>' : ''}<div class="ctl"><button data-act="left" title="на этап назад">←</button>${c.stage === FINAL ? '<button data-act="archive" title="в архив (завершено)">✓</button>' : ''}${admin ? '<button data-act="edit" title="переписать">✎</button>' : ''}<button data-act="right" title="на этап дальше">→</button></div>`;
     d.querySelector('.t').textContent = c.title;
     if (c.who) d.querySelector('.w').textContent = c.who;
     if (c.ddl) d.querySelector('.d').textContent = fmtDdl(c.ddl);
@@ -191,7 +205,7 @@ function render() {
     const active = state.cards.filter(c => !c.archivedAt);
     const arch = state.cards.filter(c => c.archivedAt).sort((a, b) => (b.archivedAt || '').localeCompare(a.archivedAt || ''));
     board.innerHTML = ''; STAGES.forEach(st => {
-        const cards = active.filter(c => c.stage === st.id);
+        const cards = active.filter(c => c.stage === st.id).sort(byPriority);
         /* кнопка «+» видна всем: у кого нет прав — приглушена и с замочком */
         const addBtn = `<button class="add${admin ? '' : ' locked'}" data-add="${st.id}" title="${admin ? 'добавить песню на этап' : 'добавлять песни может только админ'}">+</button>`;
         const col = document.createElement('section'); col.className = 'col'; col.dataset.stage = st.id; col.dataset.num = '0' + st.id;
@@ -256,26 +270,26 @@ board.addEventListener('drop', e => {
     const col = e.target.closest('.col'); if (!col) return; e.preventDefault(); col.classList.remove('over');
     const c = byId(e.dataTransfer.getData('text/plain')); if (c) move(c, +col.querySelector('.cards').dataset.stage);
 });
-const modal = document.getElementById('modal'), fTitle = document.getElementById('fTitle'), fNote = document.getElementById('fNote'), fWho = document.getElementById('fWho'), fDdlInput = document.getElementById('fDdlInput'), whoList = document.getElementById('whoList'), delBtn = document.getElementById('delBtn');
+const modal = document.getElementById('modal'), fTitle = document.getElementById('fTitle'), fNote = document.getElementById('fNote'), fWho = document.getElementById('fWho'), fDdlInput = document.getElementById('fDdlInput'), fPri = document.getElementById('fPri'), whoList = document.getElementById('whoList'), delBtn = document.getElementById('delBtn');
 const hand = document.getElementById('hand'), handText = document.getElementById('handText'), hWho = document.getElementById('hWho');
 const loginModal = document.getElementById('login'), lEmail = document.getElementById('lEmail'), lPass = document.getElementById('lPass'), lIn = document.getElementById('lIn'), loginNote = document.getElementById('loginNote');
 const authBtn = document.getElementById('authBtn');
 let editingId = null, newStage = 1, handCardId = null;
 function openEditor(id, stage) {
     editingId = id;
-    if (id) { const c = byId(id); fTitle.value = c.title; fNote.value = c.note; fWho.value = c.who || ''; fDdlInput.value = c.ddl || ''; delBtn.style.display = ''; }
-    else { newStage = stage; fTitle.value = ''; fNote.value = ''; fWho.value = ''; fDdlInput.value = ''; delBtn.style.display = 'none'; }
+    if (id) { const c = byId(id); fTitle.value = c.title; fNote.value = c.note; fWho.value = c.who || ''; fDdlInput.value = c.ddl || ''; fPri.value = String(c.priority || 2); delBtn.style.display = ''; }
+    else { newStage = stage; fTitle.value = ''; fNote.value = ''; fWho.value = ''; fDdlInput.value = ''; fPri.value = '2'; delBtn.style.display = 'none'; }
     modal.classList.add('show'); fTitle.focus();
 }
 document.getElementById('saveBtn').onclick = async () => {
-    const t = fTitle.value.trim() || 'без названия', n = fNote.value.trim(), w = fWho.value.trim(), dl = fDdlInput.value;
+    const t = fTitle.value.trim() || 'без названия', n = fNote.value.trim(), w = fWho.value.trim(), dl = fDdlInput.value, pr = Number(fPri.value) || 2;
     if (editingId) {
-        const c = byId(editingId); c.title = t; c.note = n; c.who = w; c.ddl = dl;
+        const c = byId(editingId); c.title = t; c.note = n; c.who = w; c.ddl = dl; c.priority = pr;
         if (c.stage === FINAL && !c.doneAt) c.doneAt = new Date().toISOString();
         await saveCard(c);
     }
     else {
-        const c = { id: uid(), stage: newStage, title: t, note: n, who: w, ddl: dl, doneAt: newStage === FINAL ? new Date().toISOString() : '', archivedAt: '' };
+        const c = { id: uid(), stage: newStage, title: t, note: n, who: w, ddl: dl, priority: pr, doneAt: newStage === FINAL ? new Date().toISOString() : '', archivedAt: '' };
         state.cards.push(c); await saveCard(c);
     }
     render(); modal.classList.remove('show');

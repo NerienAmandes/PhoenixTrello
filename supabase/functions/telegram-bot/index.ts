@@ -76,6 +76,7 @@ export type Card = {
     who: string;
     ddl: string | null;
     stage: number;
+    priority: number | null;
     done_at: string | null;
     archived_at: string | null;
     created_at: string | null;
@@ -100,6 +101,9 @@ const START_TEXT = [
     '⚡ дедлайны, что скоро подойдут (раз в 2 дня)',
     '⏰ просроченные (раз в 4 дня)',
     '',
+    'Напоминания идут по отделам — от записи вокала до видео,',
+    'внутри отдела сначала важные (★★★), потом обычные и низкие.',
+    '',
     '/start — включить, /stop — отключить, /status — что подключено'
 ].join('\n');
 
@@ -112,9 +116,6 @@ const json = (data: unknown, status = 200): Response =>
         status,
         headers: { 'Content-Type': 'application/json' }
     });
-
-const stageName = (id: number): string =>
-    (STAGES.find(s => s.id === id) || { name: '?' }).name;
 
 /* сегодняшняя дата по Москве, в виде YYYY-MM-DD */
 export function moscowToday(now: number): string {
@@ -244,55 +245,69 @@ export function planDue(cards: Card[], now: number, force: boolean): Due[] {
 }
 
 /* ---------- сообщение ---------- */
+/* приоритет: 1 — низкий, 2 — обычный, 3 — высокий */
+const PRIO_LABEL: Record<number, string> = {
+    1: '★ низкий',
+    2: '★★ обычный',
+    3: '★★★ высокий'
+};
+
+/* приоритет в допустимом виде: что-то другое считаем обычным */
+const prioOf = (c: Card): number => (c.priority === 1 || c.priority === 3 ? c.priority : 2);
+
+/* порядок внутри отдела: сперва приоритет, потом ближайший дедлайн,
+   потом название — чтобы карточки не прыгали туда-сюда */
+function byPriority(a: Due, b: Due): number {
+    const pa = prioOf(a.card), pb = prioOf(b.card);
+    if (pb !== pa) return pb - pa;
+    const da = a.card.ddl || '9999-12-31', db = b.card.ddl || '9999-12-31';
+    if (da !== db) return da < db ? -1 : 1;
+    return a.card.title.localeCompare(b.card.title);
+}
+
 export function renderDigest(due: Due[], cards: Card[], now: number): string {
-    const groups: Record<Tier, Due[]> = { late: [], soon: [], far: [], noddl: [] };
-    for (const d of due) groups[d.tier].push(d);
+    /* главное — по отделам: так с телефона видно, где что горит */
+    const byStage = new Map<number, Due[]>();
+    for (const d of due) {
+        const list = byStage.get(d.card.stage) || [];
+        list.push(d);
+        byStage.set(d.card.stage, list);
+    }
 
     const line = (d: Due): string => {
         const c = d.card;
-        const bits: string[] = [`<b>${esc(c.title)}</b>`];
+        const bits: string[] = [PRIO_LABEL[prioOf(c)]];
         if (d.tier === 'late') {
             const over = -d.daysLeft;
-            bits.push(`просрочено на ${over} ${plural(over)}`);
+            bits.push(`⏰ просрочено на ${over} ${plural(over)}`);
         } else if (c.ddl) {
             const left = d.daysLeft;
             const when = left === 0 ? 'сегодня' : left === 1 ? 'завтра' : `через ${left} ${plural(left)}`;
-            bits.push(`ддл ${dayLabel(c.ddl)} (${when})`);
+            bits.push(`📆 ддл ${dayLabel(c.ddl)} (${when})`);
+        } else {
+            bits.push('➕ без ддл — внести данные');
         }
-        bits.push(`этап: ${esc(stageName(c.stage))}`);
-        if (c.who) bits.push(`ответственный: ${esc(c.who)}`);
+        if (c.who) bits.push(`делают: ${esc(c.who)}`);
         if (c.created_at && now - Date.parse(c.created_at) <= NEW_DAYS * DAY) bits.push('новенькая');
-        return `• ${bits.join(' · ')}`;
+        return `• <b>${esc(c.title)}</b>\n   ${bits.join(' · ')}`;
     };
 
     const parts: string[] = ['<b>🔥 PhoenixTrello — напоминания</b>', ''];
 
-    if (groups.late.length) {
-        parts.push('<b>⏰ Просрочено</b> (напоминаем раз в 4 дня)');
-        parts.push(...groups.late.map(line));
-        parts.push('');
-    }
-    if (groups.soon.length) {
-        parts.push('<b>⚡ Скоро ДДЛ (до 7 дн)</b> (напоминаем раз в 2 дня)');
-        parts.push(...groups.soon.map(line));
-        parts.push('');
-    }
-    if (groups.far.length) {
-        parts.push('<b>📆 ДДЛ дальше 7 дней</b> (напоминаем раз в неделю)');
-        parts.push(...groups.far.map(line));
-        parts.push('');
-    }
-    if (groups.noddl.length) {
-        parts.push('<b>➕ Без ДДЛ — надо внести данные на сайт</b>');
-        parts.push(...groups.noddl.map(line));
+    for (const st of STAGES) {
+        const list = byStage.get(st.id);
+        if (!list || !list.length) continue;
+        list.sort(byPriority);
+        parts.push(`<b>${st.id} · ${esc(st.name)}</b> <i>— ${list.length}</i>`);
+        parts.push(...list.map(line));
         parts.push('');
     }
 
     const active = cards.filter(c => !c.archived_at);
-    parts.push('<b>📊 По этапам</b>');
+    parts.push(`<b>📊 Доска</b> — ${active.length} карточек`);
     for (const st of STAGES) {
         const n = active.filter(c => c.stage === st.id).length;
-        parts.push(`${st.id} · ${esc(st.name)} — ${n}`);
+        if (n) parts.push(`${st.id} · ${esc(st.name)} — ${n}`);
     }
 
     return parts.join('\n');
@@ -308,7 +323,7 @@ async function markReminded(due: Due[]): Promise<void> {
 async function dispatch(force: boolean): Promise<Record<string, unknown>> {
     const now = Date.now();
     const cards = await sbGet<Card[]>(
-        'cards?select=id,title,note,who,ddl,stage,done_at,archived_at,created_at,bot_tier,bot_sent_at'
+        'cards?select=id,title,note,who,ddl,stage,priority,done_at,archived_at,created_at,bot_tier,bot_sent_at'
     );
 
     const due = planDue(cards, now, force);

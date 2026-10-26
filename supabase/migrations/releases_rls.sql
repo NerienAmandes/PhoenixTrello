@@ -14,6 +14,7 @@ create table if not exists public.cards (
     who         text not null default '',
     ddl         date,
     stage       int         not null default 1 check (stage between 1 and 6),
+    priority    int         not null default 2 check (priority between 1 and 3),
     done_at     timestamptz,
     archived_at timestamptz
 );
@@ -101,6 +102,7 @@ create policy "admins только свои"
     using (lower(email) = lower(coalesce(auth.jwt() ->> 'email', '')));
 
 /* ---------- 5. Колоночные права: чем может оперировать участник ---------- */
+/* приоритет в списке нет — его меняет только админ, через функцию ниже */
 revoke all on public.cards from anon, authenticated;
 grant select on public.cards to anon, authenticated;
 grant update (stage, who, done_at, archived_at) on public.cards to anon, authenticated;
@@ -117,7 +119,8 @@ create or replace function public.admin_upsert_card(
     p_who         text        default '',
     p_ddl         date        default null,
     p_done_at     timestamptz default null,
-    p_archived_at timestamptz default null
+    p_archived_at timestamptz default null,
+    p_priority    int         default 2
 )
     returns void
     language plpgsql
@@ -129,9 +132,10 @@ begin
         raise exception 'прав на запись нет' using errcode = '42501';
     end if;
 
-    insert into public.cards (id, stage, title, note, who, ddl, done_at, archived_at)
+    insert into public.cards (id, stage, title, note, who, ddl, done_at, archived_at, priority)
     values (p_id, p_stage, coalesce(nullif(p_title, ''), 'без названия'),
-            coalesce(p_note, ''), coalesce(p_who, ''), p_ddl, p_done_at, p_archived_at)
+            coalesce(p_note, ''), coalesce(p_who, ''), p_ddl, p_done_at, p_archived_at,
+            least(greatest(coalesce(p_priority, 2), 1), 3))
     on conflict (id) do update
         set stage       = excluded.stage,
             title       = excluded.title,
@@ -139,7 +143,8 @@ begin
             who         = excluded.who,
             ddl         = excluded.ddl,
             done_at     = excluded.done_at,
-            archived_at = excluded.archived_at;
+            archived_at = excluded.archived_at,
+            priority    = excluded.priority;
 end;
 $$;
 
@@ -158,7 +163,7 @@ begin
 end;
 $$;
 
-grant execute on function public.admin_upsert_card(text, int, text, text, text, date, timestamptz, timestamptz) to authenticated;
+grant execute on function public.admin_upsert_card(text, int, text, text, text, date, timestamptz, timestamptz, int) to authenticated;
 grant execute on function public.admin_delete_card(text)  to authenticated;
 
 /* Полного сброса доски больше нет: кнопка «начать с бумажки» убрана,
