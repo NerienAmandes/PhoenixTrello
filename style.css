@@ -338,82 +338,78 @@ h1 {
     min-height: 56vh
 }
 
-/* ===== оттенок бумаги по отделам =====
-   У каждого этапа свой приглушённый тон бумаги — не крикливый, но
-   различимый: светлее/теплее/холоднее соседей, все в общей палитре.
-   Карточка берёт цвет от своей колонки, поэтому при переносе
-   в другой отдел перекрашивается сама. */
+/* ===== тематические цвета по отделам ===== */
 .col[data-stage="1"] {
-    --card-paper: #eadfc0;
-    --card-paper-ok: #e4e3c6;
-    --card-tape: linear-gradient(100deg, rgba(226, 196, 132, .85), rgba(200, 166, 100, .7))
+    --card-paper: #f5d6dc;
+    --card-paper-ok: #e8f5e9;
+    --card-tape: linear-gradient(100deg, rgba(245, 200, 210, .9), rgba(220, 170, 180, .8))
 }
 
 .col[data-stage="2"] {
-    --card-paper: #e1dbc7;
-    --card-paper-ok: #dde0c6;
-    --card-tape: linear-gradient(100deg, rgba(214, 206, 172, .85), rgba(186, 176, 140, .7))
+    --card-paper: #d4e5f5;
+    --card-paper-ok: #e8f5e9;
+    --card-tape: linear-gradient(100deg, rgba(200, 220, 245, .9), rgba(170, 190, 220, .8))
 }
 
 .col[data-stage="3"] {
-    --card-paper: #e6d2c2;
-    --card-paper-ok: #e2d7c8;
-    --card-tape: linear-gradient(100deg, rgba(226, 182, 160, .85), rgba(198, 152, 130, .7))
+    --card-paper: #f5f0d4;
+    --card-paper-ok: #f0f4c3;
+    --card-tape: linear-gradient(100deg, rgba(245, 235, 180, .9), rgba(220, 210, 150, .8))
 }
 
 .col[data-stage="4"] {
-    --card-paper: #d8d3cb;
-    --card-paper-ok: #d9dccb;
-    --card-tape: linear-gradient(100deg, rgba(198, 194, 188, .85), rgba(168, 164, 158, .7))
+    --card-paper: #e8d6f5;
+    --card-paper-ok: #e1bee7;
+    --card-tape: linear-gradient(100deg, rgba(220, 190, 245, .9), rgba(190, 160, 220, .8))
 }
 
 .col[data-stage="5"] {
-    --card-paper: #d7dac2;
-    --card-paper-ok: #dbdfc4;
-    --card-tape: linear-gradient(100deg, rgba(198, 210, 168, .85), rgba(168, 180, 138, .7))
+    --card-paper: #d4f5e5;
+    --card-paper-ok: #c8e6c9;
+    --card-tape: linear-gradient(100deg, rgba(180, 245, 210, .9), rgba(150, 220, 180, .8))
 }
 
 .col[data-stage="6"] {
-    --card-paper: #d7cdd8;
-    --card-paper-ok: #d8d5cc;
-    --card-tape: linear-gradient(100deg, rgba(204, 184, 206, .85), rgba(174, 154, 178, .7))
+    --card-paper: #f5d6c4;
+    --card-paper-ok: #ffe0b2;
+    --card-tape: linear-gradient(100deg, rgba(245, 200, 160, .9), rgba(220, 170, 130, .8))
 }
 
-/* светлая тема — те же тона, но на белой бумаге */
+/* светлая тема */
 body.light .col[data-stage="1"] {
-    --card-paper: #f7edd5;
-    --card-paper-ok: #eff0da;
-    --card-tape: linear-gradient(100deg, rgba(232, 204, 142, .9), rgba(208, 176, 112, .8))
+    --card-paper: #fce4ec;
+    --card-paper-ok: #e8f5e9;
+    --card-tape: linear-gradient(100deg, rgba(255, 210, 220, .95), rgba(230, 180, 190, .85))
 }
 
 body.light .col[data-stage="2"] {
-    --card-paper: #f3eee0;
-    --card-paper-ok: #edefdc;
-    --card-tape: linear-gradient(100deg, rgba(222, 214, 182, .9), rgba(194, 184, 150, .8))
+    --card-paper: #e3f2fd;
+    --card-paper-ok: #e8f5e9;
+    --card-tape: linear-gradient(100deg, rgba(210, 230, 255, .95), rgba(180, 200, 230, .85))
 }
 
 body.light .col[data-stage="3"] {
-    --card-paper: #f7e6db;
-    --card-paper-ok: #eee3d8;
-    --card-tape: linear-gradient(100deg, rgba(232, 194, 176, .9), rgba(206, 166, 150, .8))
+    --card-paper: #fff9c4;
+    --card-paper-ok: #f0f4c3;
+    --card-tape: linear-gradient(100deg, rgba(255, 245, 190, .95), rgba(230, 220, 160, .85))
 }
 
 body.light .col[data-stage="4"] {
-    --card-paper: #eeeae4;
-    --card-paper-ok: #e6e9dd;
-    --card-tape: linear-gradient(100deg, rgba(210, 206, 202, .9), rgba(180, 176, 174, .8))
+    --card-paper: #f3e5f5;
+    --card-paper-ok: #e1bee7;
+    --card-tape: linear-gradient(100deg, rgba(235, 210, 255, .95), rgba(205, 180, 230, .85))
 }
 
 body.light .col[data-stage="5"] {
-    --card-paper: #ecf0dd;
-    --card-paper-ok: #e8ecd6;
-    --card-tape: linear-gradient(100deg, rgba(206, 216, 176, .9), rgba(176, 188, 146, .8))
+    --card-paper: #e0f2f1;
+    --card-paper-ok: #c8e6c9;
+    --card-tape: linear-gradient(100deg, rgba(190, 245, 230, .95), rgba(160, 220, 200, .85))
 }
 
 body.light .col[data-stage="6"] {
-    --card-paper: #f1e8f0;
-    --card-paper-ok: #e8e4e6;
-    --card-tape: linear-gradient(100deg, rgba(216, 198, 218, .9), rgba(188, 168, 194, .8))
+    --card-paper: #ffe0b2;
+    --card-paper-ok: #ffe0b2;
+    --card-tape: linear-gradient(100deg, rgba(255, 220, 170, .95), rgba(230, 190, 140, .85))
 }
 
 .col::before {
@@ -1225,49 +1221,60 @@ body.light .col[data-stage="6"] {
     header {
         padding: 14px 16px 8px;
     }
+
     .mast {
         gap: 10px;
         align-items: flex-start;
     }
+
     h1 {
         font-size: clamp(38px, 11vw, 56px);
         line-height: .9;
     }
+
     .stampBadge {
         font-size: 11px;
         letter-spacing: .2em;
         padding: 7px 12px;
         margin-bottom: 0;
     }
+
     .sub {
         font-size: 18px;
         margin-top: 10px;
     }
+
     .progress {
         width: 100%;
         margin-top: 10px;
     }
+
     .handbar {
         height: 12px;
     }
+
     #barText {
         font-size: 17px;
         margin-top: 6px;
     }
+
     .filters {
         font-size: 17px;
         gap: 8px;
         margin-top: 10px;
     }
+
     .filters select {
         font-size: 16px;
         padding: 5px 14px;
     }
+
     .legend {
         font-size: 16px;
         gap: 12px;
         margin-top: 8px;
     }
+
     .legend .lg i,
     .prio i {
         width: 6px;
@@ -1282,11 +1289,13 @@ body.light .col[data-stage="6"] {
         padding: 12px 14px 24px;
         overflow-x: visible;
     }
+
     .col {
         flex: 1 1 auto;
         width: 100%;
         min-height: auto;
     }
+
     /* большой «01» за карточками на телефоне бесполезен — оставляем
        маленький номер в углу как пометку */
     .col::before {
@@ -1295,18 +1304,22 @@ body.light .col[data-stage="6"] {
         right: 4px;
         opacity: .35;
     }
+
     .colHead {
         margin-bottom: 10px;
         gap: 8px;
     }
+
     .stamp {
         font-size: 12px;
         padding: 6px 10px 5px;
         letter-spacing: .16em;
     }
+
     .count {
         font-size: 18px;
     }
+
     .add {
         font-size: 24px;
     }
@@ -1315,22 +1328,27 @@ body.light .col[data-stage="6"] {
     .card {
         padding: 16px 14px 10px;
     }
+
     .card::before {
         width: 70px;
         height: 20px;
         top: -10px;
     }
+
     .card .t {
         font-size: 16px;
     }
+
     .card .t::before {
         font-size: 15px;
     }
+
     .card .w,
     .card .d,
     .card .n {
         font-size: 15px;
     }
+
     .cards {
         gap: 14px;
     }
@@ -1344,6 +1362,7 @@ body.light .col[data-stage="6"] {
         padding: 7px 13px;
         backdrop-filter: blur(4px);
     }
+
     #authBtn {
         top: 10px;
         left: 10px;
@@ -1353,11 +1372,13 @@ body.light .col[data-stage="6"] {
         text-overflow: ellipsis;
         transform: rotate(0);
     }
+
     #themeBtn {
         top: 10px;
         right: 10px;
         transform: rotate(0);
     }
+
     #archiveBtn {
         bottom: 10px;
         left: 10px;
@@ -1369,6 +1390,7 @@ body.light .col[data-stage="6"] {
         opacity: 1;
         margin-top: 6px;
     }
+
     .ctl button {
         font-size: 16px;
         padding: 4px 10px;
@@ -1378,27 +1400,34 @@ body.light .col[data-stage="6"] {
     #archive {
         padding: 10px 14px 60px;
     }
+
     .archiveHead {
         gap: 10px;
     }
+
     .archiveNote {
         font-size: 17px;
     }
+
     .archiveGrid {
         grid-template-columns: 1fr;
         gap: 16px;
         margin-top: 16px;
     }
+
     .acard {
         padding: 16px 14px 12px;
     }
+
     .acard .t {
         font-size: 15px;
     }
+
     .acard .w,
     .acard .c {
         font-size: 15px;
     }
+
     .hint {
         font-size: 16px;
         padding: 4px 16px 28px;
@@ -1408,19 +1437,23 @@ body.light .col[data-stage="6"] {
     .panel {
         padding: 30px 22px 22px;
     }
+
     .panel::before,
     .panel::after {
         width: 70px;
         height: 22px;
         top: -10px;
     }
+
     .panel input,
     .panel textarea {
         font-size: 19px;
     }
+
     .panel input[type="date"] {
         font-size: 17px;
     }
+
     .panel select {
         font-size: 18px;
     }
@@ -1431,12 +1464,14 @@ body.light .col[data-stage="6"] {
     h1 {
         font-size: 38px;
     }
+
     #themeBtn,
     #archiveBtn,
     #authBtn {
         font-size: 14px;
         padding: 6px 11px;
     }
+
     .card {
         padding: 14px 12px 9px;
     }
