@@ -59,7 +59,9 @@ function renderWhoTags() {
     teamMembers.forEach(m => {
         const tag = document.createElement('span');
         tag.className = 'm-tag' + (currentWho.includes(m.name) ? ' selected' : '');
-        tag.innerHTML = m.name + (m.role ? `<span class="m-role">· ${m.role}</span>` : '');
+        const roles = (m.role || '').split(/[,;]/).map(s => s.trim()).filter(Boolean);
+        const roleStr = roles.length ? `<span class="m-roles">${roles.map(r => `<i>${r}</i>`).join('')}</span>` : '';
+        tag.innerHTML = m.name + roleStr;
         tag.onclick = () => {
             tag.classList.toggle('selected');
             const sel = Array.from(container.querySelectorAll('.m-tag.selected')).map(t => t.childNodes[0].textContent.trim());
@@ -80,14 +82,56 @@ function renderTeamList() {
     teamMembers.forEach(m => {
         const div = document.createElement('div');
         div.className = 't-member';
+        div.dataset.id = m.id;
+        const roles = (m.role || '').split(/[,;]/).map(s => s.trim()).filter(Boolean);
+        const roleHtml = roles.length
+            ? roles.map(r => `<span class="t-role-chip">${r}</span>`).join('')
+            : '<span class="t-role-empty">нажми, чтобы задать роль</span>';
         div.innerHTML = `
             <div class="t-info">
-                <span>${m.name}${m.role ? `<span class="t-role"> · ${m.role}</span>` : ''}</span>
+                <span class="t-name">${m.name}</span>
+                <span class="t-roles" title="кликни, чтобы изменить роль">${roleHtml}</span>
             </div>
             <button class="t-del" data-id="${m.id}">убрать</button>
         `;
         list.appendChild(div);
     });
+}
+
+function startEditRole(rolesEl) {
+    const member = rolesEl.closest('.t-member');
+    const id = member.dataset.id;
+    const current = teamMembers.find(m => m.id == id)?.role || '';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 't-role-input';
+    input.value = current;
+    input.placeholder = 'роли через запятую: вокал, гитара';
+    rolesEl.innerHTML = '';
+    rolesEl.appendChild(input);
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+
+    const finish = async () => {
+        const val = input.value.trim();
+        renderTeamList();
+        if (val !== current) await updateMemberRole(id, val);
+    };
+    input.addEventListener('blur', finish);
+    input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+        if (e.key === 'Escape') { input.value = current; input.blur(); }
+    });
+}
+
+async function updateMemberRole(id, role) {
+    if (!sb) return;
+    try {
+        const { error } = await sb.from('members').update({ role }).eq('id', id);
+        if (error) { alert('Ошибка: ' + error.message); return; }
+        await loadMembers();
+        renderTeamList();
+    } catch (e) { alert('Не удалось сохранить роль'); }
 }
 
 async function addMember() {
@@ -487,7 +531,9 @@ if (teamModal) teamModal.addEventListener('click', e => { if (e.target.id === 't
 const teamList = document.getElementById('teamList');
 if (teamList) teamList.addEventListener('click', e => {
     const btn = e.target.closest('.t-del');
-    if (btn) removeMember(btn.dataset.id);
+    if (btn) { removeMember(btn.dataset.id); return; }
+    const rolesEl = e.target.closest('.t-roles');
+    if (rolesEl && !rolesEl.querySelector('input')) startEditRole(rolesEl);
 });
 
 // Запуск

@@ -1506,16 +1506,6 @@ body.light .col[data-stage="6"] {
     transform: rotate(-1deg);
 }
 
-.m-tag .m-role {
-    font-size: 13px;
-    opacity: .7;
-    margin-left: 4px;
-}
-
-.m-tag.selected .m-role {
-    opacity: .9;
-}
-
 /* ===== список команды ===== */
 .team-list {
     display: flex;
@@ -1544,10 +1534,89 @@ body.light .col[data-stage="6"] {
     gap: 2px;
 }
 
-.t-member .t-role {
+.t-member .t-name {
+    font-size: 20px;
+    color: var(--ink);
+}
+
+.t-member .t-roles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 2px;
+    cursor: pointer;
+    align-items: center;
+    min-height: 22px;
+}
+
+.t-member .t-role-chip {
+    font-family: Oswald;
+    font-size: 11px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--verm-deep);
+    background: rgba(201, 58, 28, .1);
+    border: 1px solid rgba(201, 58, 28, .3);
+    padding: 1px 8px;
+    border-radius: 99px;
+    line-height: 1.5;
+}
+
+.t-member .t-role-empty {
+    font-family: Caveat, cursive;
     font-size: 15px;
-    color: var(--ink-soft);
-    opacity: .75;
+    color: var(--dim);
+    opacity: .55;
+    font-style: italic;
+}
+
+.t-member .t-roles:hover .t-role-chip {
+    border-color: var(--verm-deep);
+}
+
+.t-member .t-roles:hover .t-role-empty {
+    opacity: .85;
+    color: var(--verm);
+}
+
+.t-member .t-role-input {
+    font-family: Caveat, cursive;
+    font-size: 18px;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1.5px solid var(--verm);
+    border-radius: 6px;
+    padding: 3px 8px;
+    width: 100%;
+    box-sizing: border-box;
+    outline: none;
+}
+
+.m-tag .m-roles {
+    margin-left: 6px;
+    display: inline-flex;
+    gap: 4px;
+    vertical-align: middle;
+}
+
+.m-tag .m-roles i {
+    font-style: normal;
+    font-family: Oswald;
+    font-size: 10px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--verm-deep);
+    background: rgba(201, 58, 28, .12);
+    border: 1px solid rgba(201, 58, 28, .35);
+    padding: 1px 6px;
+    border-radius: 99px;
+    line-height: 1.5;
+}
+
+.m-tag.selected .m-roles i {
+    background: rgba(255, 255, 255, .2);
+    border-color: rgba(255, 255, 255, .5);
+    color: #fff;
 }
 
 .t-member .t-del {
