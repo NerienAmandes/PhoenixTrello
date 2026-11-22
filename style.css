@@ -795,9 +795,9 @@ body.light .col[data-stage="6"] {
 }
 
 #teamBtn {
-    top: 60px;
-    left: 20px;
-    transform: rotate(-1.5deg)
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-1.5deg)
 }
 
 #themeBtn:hover,
@@ -999,7 +999,8 @@ body.light .col[data-stage="6"] {
 }
 
 #cancelBtn,
-#handSkip {
+#handSkip,
+#closeTeamBtn {
     border: none;
     background: none;
     font-family: Caveat, cursive;
@@ -1009,7 +1010,8 @@ body.light .col[data-stage="6"] {
 }
 
 #cancelBtn:hover,
-#handSkip:hover {
+#handSkip:hover,
+#closeTeamBtn:hover {
     color: var(--ink)
 }
 
