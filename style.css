@@ -1550,14 +1550,6 @@ body.light .col[data-stage="6"] {
     opacity: .75;
 }
 
-.t-member .t-email {
-    font-size: 13px;
-    color: var(--dim);
-    opacity: .6;
-    font-family: Oswald;
-    letter-spacing: .02em;
-}
-
 .t-member .t-del {
     background: none;
     border: none;

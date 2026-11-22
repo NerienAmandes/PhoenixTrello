@@ -83,7 +83,6 @@ function renderTeamList() {
         div.innerHTML = `
             <div class="t-info">
                 <span>${m.name}${m.role ? `<span class="t-role"> · ${m.role}</span>` : ''}</span>
-                ${m.email ? `<span class="t-email">${m.email}</span>` : ''}
             </div>
             <button class="t-del" data-id="${m.id}">убрать</button>
         `;
@@ -94,14 +93,12 @@ function renderTeamList() {
 async function addMember() {
     const name = document.getElementById('newMemberName').value.trim();
     const role = document.getElementById('newMemberRole').value.trim();
-    const email = document.getElementById('newMemberEmail').value.trim();
     if (!name) return alert('Введи имя');
     try {
-        const { error } = await sb.from('members').insert({ name, role: role || '', email, is_active: true });
+        const { error } = await sb.from('members').insert({ name, role: role || '', is_active: true });
         if (error) { alert('Ошибка: ' + error.message); return; }
         document.getElementById('newMemberName').value = '';
         document.getElementById('newMemberRole').value = '';
-        document.getElementById('newMemberEmail').value = '';
         await loadMembers();
         renderTeamList();
     } catch (e) { alert('Не удалось добавить'); }
