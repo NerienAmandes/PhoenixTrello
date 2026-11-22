@@ -63,19 +63,27 @@
     <button id="archiveBtn">архив</button>
     <button id="themeBtn" title="переключить освещение"></button>
     <button id="authBtn">войти</button>
+    <button id="teamBtn" hidden>👥 команда</button>
 
+    <!-- Модалка редактирования карточки -->
     <div class="modal" id="modal">
         <div class="panel">
             <h2>карточка песни</h2>
             <input id="fTitle" placeholder="название песни">
-            <input id="fWho" list="whoList" placeholder="кто работает (через запятую)">
-            <datalist id="whoList"></datalist>
+            <div class="fld">
+                <span>участники:</span>
+                <div id="whoTags" class="member-tags"></div>
+            </div>
+            <input type="hidden" id="fWho">
             <label class="fld"><span>дедлайн</span><input type="date" id="fDdlInput"></label>
-            <label class="fld"><span>приоритет</span><select id="fPri">
+            <label class="fld">
+                <span>приоритет</span>
+                <select id="fPri">
                     <option value="1">низкий</option>
                     <option value="2" selected>обычный</option>
                     <option value="3">высокий</option>
-                </select></label>
+                </select>
+            </label>
             <textarea id="fNote" rows="2" placeholder="пометка на полях (например: придётся переписывать)"></textarea>
             <div class="row">
                 <button id="saveBtn">сохранить</button>
@@ -85,11 +93,12 @@
         </div>
     </div>
 
+    <!-- Модалка передачи этапа -->
     <div class="modal" id="hand">
         <div class="panel small">
             <h2>передача</h2>
             <p class="handNote" id="handText"></p>
-            <input id="hWho" list="whoList" placeholder="новый ответственный">
+            <input id="hWho" placeholder="новый ответственный">
             <div class="row">
                 <button id="handSave">назначить</button>
                 <button id="handSkip">оставить как было</button>
@@ -97,6 +106,7 @@
         </div>
     </div>
 
+    <!-- Модалка входа админа -->
     <div class="modal" id="login">
         <div class="panel small">
             <h2>вход для админа</h2>
@@ -107,6 +117,21 @@
                 <button id="lIn">войти</button>
                 <button id="lCancel">отмена</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Модалка управления командой -->
+    <div class="modal" id="teamModal">
+        <div class="panel">
+            <h2>управление командой</h2>
+            <div id="teamList" class="team-list"></div>
+            <div class="team-add">
+                <input id="newMemberName" placeholder="имя">
+                <input id="newMemberRole" placeholder="роль (вокал, арт...)">
+                <input id="newMemberEmail" placeholder="email (необязательно)">
+                <button id="addMemberBtn">добавить</button>
+            </div>
+            <div class="row"><button id="closeTeamBtn">закрыть</button></div>
         </div>
     </div>
 
