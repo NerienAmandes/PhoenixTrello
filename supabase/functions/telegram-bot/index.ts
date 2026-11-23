@@ -296,6 +296,11 @@ export function renderDigest(due: Due[], cards: Card[], now: number): string {
 
     const line = (d: Due): string => {
         const c = d.card;
+        /* первая строка: релиз + ответственный (чтобы сразу было видно,
+           кто за что отвечает). Если кто не указан — подсвечиваем. */
+        const who = c.who ? `<b>${esc(c.who.trim())}</b>` : '<i>❓ не назначен</i>';
+        const head = `• <b>${esc(c.title)}</b>  →  👤 ${who}`;
+
         const bits: string[] = [PRIO_STAR[prioOf(c)]];
         if (d.tier === 'late') {
             const over = -d.daysLeft;
@@ -307,9 +312,8 @@ export function renderDigest(due: Due[], cards: Card[], now: number): string {
         } else {
             bits.push('➕ без ддл — внести данные');
         }
-        if (c.who) bits.push(`👤 ${esc(c.who)}`);
         if (c.note) bits.push(`📝 ${esc(c.note)}`);
-        return `• <b>${esc(c.title)}</b>\n   ${bits.join('  ·  ')}`;
+        return `${head}\n   ${bits.join('  ·  ')}`;
     };
 
     const parts: string[] = ['<b>🔥 PhoenixTrello — напоминания</b>', `🕐 ${fullDate(now)}`, ''];
