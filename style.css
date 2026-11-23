@@ -199,7 +199,7 @@ h1 {
 
 .sub {
     font-family: Caveat, cursive;
-    font-size: 24px;
+    font-size: clamp(18px, 1.5vw, 24px);
     color: var(--muted);
     margin-top: 16px;
     transform: rotate(-.4deg)
@@ -309,8 +309,9 @@ h1 {
 }
 
 #board {
-    display: flex;
-    gap: 30px;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(190px, 1fr));
+    gap: clamp(14px, 2vw, 30px);
     overflow-x: auto;
     padding: 22px 28px 30px;
     align-items: flex-start
@@ -325,16 +326,9 @@ h1 {
     border-radius: 99px
 }
 
-@media(min-width:1440px) {
-    #board {
-        display: grid;
-        grid-template-columns: repeat(6, 1fr)
-    }
-}
-
 .col {
     position: relative;
-    flex: 0 0 260px;
+    min-width: 0;
     min-height: 56vh
 }
 
@@ -418,7 +412,7 @@ body.light .col[data-stage="6"] {
     top: -30px;
     right: 0;
     font-weight: 700;
-    font-size: 100px;
+    font-size: clamp(56px, 7vw, 100px);
     line-height: 1;
     color: var(--ghost);
     pointer-events: none
@@ -433,7 +427,7 @@ body.light .col[data-stage="6"] {
 
 .stamp {
     font-weight: 600;
-    font-size: 14px;
+    font-size: clamp(11px, 0.85vw, 14px);
     letter-spacing: .2em;
     text-transform: uppercase;
     color: var(--verm);
@@ -447,7 +441,7 @@ body.light .col[data-stage="6"] {
 .count {
     margin-left: auto;
     font-family: Caveat, cursive;
-    font-size: 22px;
+    font-size: clamp(18px, 1.4vw, 22px);
     color: var(--text)
 }
 
@@ -455,7 +449,7 @@ body.light .col[data-stage="6"] {
     background: none;
     border: none;
     font-family: Caveat, cursive;
-    font-size: 28px;
+    font-size: clamp(22px, 1.8vw, 28px);
     line-height: 1;
     color: var(--gold-text);
     cursor: pointer;
@@ -627,7 +621,7 @@ body.light .col[data-stage="6"] {
 
 .card .t {
     font-weight: 500;
-    font-size: 18px;
+    font-size: clamp(15px, 1.15vw, 18px);
     letter-spacing: .02em;
     text-transform: uppercase;
     color: var(--ink);
@@ -639,14 +633,14 @@ body.light .col[data-stage="6"] {
     content: counter(trk, decimal-leading-zero)" ";
     font-family: Caveat, cursive;
     font-weight: 700;
-    font-size: 17px;
+    font-size: clamp(14px, 1.1vw, 17px);
     color: var(--verm-deep)
 }
 
 .card .w {
     margin-top: 6px;
     font-family: Caveat, cursive;
-    font-size: 17px;
+    font-size: clamp(14px, 1.1vw, 17px);
     color: var(--ink-soft);
     display: inline-block
 }
@@ -659,7 +653,7 @@ body.light .col[data-stage="6"] {
 .card .d {
     margin-top: 4px;
     font-family: Caveat, cursive;
-    font-size: 17px;
+    font-size: clamp(14px, 1.1vw, 17px);
     color: var(--ink-soft);
     display: inline-block
 }
@@ -681,7 +675,7 @@ body.light .col[data-stage="6"] {
 .card .n {
     margin-top: 6px;
     font-family: Caveat, cursive;
-    font-size: 19px;
+    font-size: clamp(15px, 1.2vw, 19px);
     color: #a33d1e;
     transform: rotate(-.5deg);
     line-height: 1.3
