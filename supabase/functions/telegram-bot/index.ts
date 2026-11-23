@@ -11,7 +11,7 @@
    Как часто напоминать (считается по каждой карточке отдельно):
    • ддл дальше 7 дней   — раз в неделю, по понедельникам
    • ддл ≤ 7 дней        — раз в 2 дня
-   • просрочено           — раз в 4 дня, с текстом «просрочено на N дней»
+   • просрочено           — каждый день, с текстом «ПРОСРОЧЕНО !! проверьте и обновите данные»
    • без ддл              — раз в неделю, по понедельникам
    Про то, кого и когда доломали, бот помнит в самой карточке
    (колонки bot_tier и bot_sent_at).
@@ -52,7 +52,7 @@ const LIMIT = 3600;            /* Телеграм не ест сообщени�
 export type Tier = 'late' | 'soon' | 'far' | 'noddl';
 
 const TIER_GAP: Record<Tier, number> = {
-    late: 4 * DAY,    /* просрочено — раз в 4 дня */
+    late: 3 * DAY,    /* просрочено — каждый день, чтобы не залечивалось */
     soon: 2 * DAY,    /* ддл ≤ 7 дней — раз в 2 дня */
     far: 7 * DAY,     /* ддл дальше 7 дней — раз в неделю */
     noddl: 7 * DAY    /* без ддл — раз в неделю */
@@ -99,7 +99,7 @@ const START_TEXT = [
     '➕ карточки без ДДЛ — данные из списка не внесены на сайт (раз в неделю)',
     '📆 дедлайны дальше 7 дней (раз в неделю)',
     '⚡ дедлайны, что скоро подойдут (раз в 2 дня)',
-    '⏰ просроченные (раз в 4 дня)',
+    '⏰ просроченные — каждый день «ПРОСРОЧЕНО !! проверьте и обновите данные»',
     '',
     'Напоминания идут по отделам — от записи вокала до видео,',
     'внутри отдела сначала важные (★★★), потом обычные и низкие.',
@@ -234,7 +234,7 @@ export function isDue(c: Card, tier: Tier, now: number, monday: boolean): boolea
 export function planDue(cards: Card[], now: number, force: boolean): Due[] {
     const today = moscowToday(now);
     const monday = isMonday(today);
-    const work = cards.filter(c => !c.archived_at && c.stage !== FINAL);
+    const work = cards.filter(c => !c.archived_at);
     const out: Due[] = [];
     for (const c of work) {
         const tier = tierOf(c, today);
@@ -279,7 +279,7 @@ export function renderDigest(due: Due[], cards: Card[], now: number): string {
         const bits: string[] = [PRIO_LABEL[prioOf(c)]];
         if (d.tier === 'late') {
             const over = -d.daysLeft;
-            bits.push(`⏰ просрочено на ${over} ${plural(over)}`);
+            bits.push(`⏰ ПРОСРОЧЕНО на ${over} ${plural(over)} !! проверьте и обновите данные`);
         } else if (c.ddl) {
             const left = d.daysLeft;
             const when = left === 0 ? 'сегодня' : left === 1 ? 'завтра' : `через ${left} ${plural(left)}`;

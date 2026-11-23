@@ -669,7 +669,7 @@ body.light .col[data-stage="6"] {
 }
 
 .card.late .d::after {
-    content: ' · горит!'
+    content: ' · дд просрочен'
 }
 
 .card .n {
@@ -715,6 +715,12 @@ body.light .col[data-stage="6"] {
 .ctl button:hover {
     color: var(--verm-deep);
     background: var(--ctl-hover)
+}
+
+/* кнопка «продлить дедлайн» на просроченных карточках */
+.card.late .ctl button[data-act="extend"] {
+    color: var(--verm-deep);
+    font-weight: 700
 }
 
 .card.stamped::after {

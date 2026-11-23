@@ -13,18 +13,51 @@ const STAGES = [
     { id: 6, name: 'Видео' }
 ];
 const FINAL = STAGES.length;
+
+/* Рекомендуемый срок (в днях) для каждого этапа.
+   На его основе автоматически ставится дедлайн при переносе,
+   при создании новой карточки и при нажатии «продлить». */
+const STAGE_DAYS = { 1: 10, 2: 5, 3: 7, 4: 14, 5: 14, 6: 10 };
+
+function toIso(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
+/* Рекомендуемый дедлайн для нового этапа (для новых карточек и кнопки «продлить»). */
+function recDdl(stage) {
+    const days = STAGE_DAYS[stage] ?? 7;
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    return toIso(d);
+}
+
+/* Дедлайн при переносе карточки.
+   Вперёд:  отсчитываем от старого дедлайна (или от сегодня, если его нет) + дни нового этапа.
+   Назад:   откатываем — вычитаем дни старого этапа (чтобы вернуться к изначальному сроку).
+   Если получившаяся дата уже прошла — карточка автоматически подсветится как просроченная. */
+function moveDdl(oldDdl, newStage, oldStage) {
+    const base = oldDdl ? new Date(oldDdl + 'T00:00:00') : new Date();
+    const days = newStage > oldStage
+        ? (STAGE_DAYS[newStage] ?? 7)
+        : -(STAGE_DAYS[oldStage] ?? 7);
+    base.setDate(base.getDate() + days);
+    return toIso(base);
+}
 const PRIO_NAMES = { 1: 'низкий', 2: 'обычный', 3: 'высокий' };
 const MONTHS = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const fmtDdl = s => { const d = new Date(s + 'T00:00:00'); return d.getDate() + ' ' + MONTHS[d.getMonth()]; };
 const dayEnd = s => new Date(s + 'T23:59:59');
-const isEarly = c => c.stage === FINAL && !!c.doneAt && !!c.ddl && new Date(c.doneAt) <= dayEnd(c.ddl);
-const isLate = c => !!c.ddl && c.stage !== FINAL && new Date() > dayEnd(c.ddl);
+const isEarly = c => !!c.archivedAt && !!c.ddl && new Date(c.archivedAt) <= dayEnd(c.ddl);
+const isLate = c => !!c.ddl && !c.archivedAt && new Date() > dayEnd(c.ddl);
 
 function seedCards() {
     const s = []; let i = 0;
-    const add = (stage, t, n) => s.push({ id: 'seed' + (++i), stage, title: t, note: n || '', who: '', ddl: '', doneAt: '', archivedAt: '', priority: 2 });
+    const add = (stage, t, n) => s.push({ id: 'seed' + (++i), stage, title: t, note: n || '', who: '', ddl: recDdl(stage), doneAt: '', archivedAt: '', priority: 2 });
     [['Ирис Ado'], ['Разбеги'], ['Brain Rot'], ['Bad Apple'], ['Киберпанк'], ['Песня про самовыпил'], ['Клемобис'], ['Парад самонадеянности'], ['Тела'], ['Fuck you'], ['Dance forever'], ['Феникс'], ["Don't come crying"], ['Magic Ado'], ['AiAiAi (Ado)']].forEach(x => add(1, x[0]));
     add(2, 'RPG', 'тайм'); add(2, 'Kawaii to басен', 'так меняется же?'); add(2, 'Land of the dead', 'придётся переписывать');
     [['All save Challenge'], ['Xy'], ['Run Rabbit'], ['Сердце байта'], ['Azari — Seapegoat']].forEach(x => add(3, x[0]));
@@ -165,9 +198,13 @@ function openTeamModal() {
    ========================================= */
 async function saveFlow(c) {
     if (!sb) { saveLocal(); return; }
-    const { error } = await sb.from('cards').update({
-        stage: c.stage, who: c.who || '', done_at: c.doneAt || null, archived_at: c.archivedAt || null
-    }).eq('id', c.id);
+    // Админ может менять всё; участник — только ответственного и дедлайн
+    // (двигать этапы и архивировать может только админ, колонки stage/done_at/archived_at
+    //  в грантах у участников нет, поэтому отправляем их только админам).
+    const payload = admin
+        ? { stage: c.stage, who: c.who || '', ddl: c.ddl || null, done_at: c.doneAt || null, archived_at: c.archivedAt || null }
+        : { who: c.who || '', ddl: c.ddl || null };
+    const { error } = await sb.from('cards').update(payload).eq('id', c.id);
     if (error) { console.warn('не сохранилось', error); await loadCards(); }
 }
 
@@ -363,12 +400,20 @@ function byPriority(a, b) {
 }
 
 function cardEl(c) {
-    const d = document.createElement('div'); d.className = 'card'; d.draggable = true; d.dataset.id = c.id;
+    const d = document.createElement('div'); d.className = 'card'; d.draggable = admin; d.dataset.id = c.id;
     const pr = [1, 2, 3].includes(c.priority) ? c.priority : 2; d.dataset.p = pr;
     if (!matches(c)) d.classList.add('dim');
     if (isEarly(c)) d.classList.add('early');
     if (isLate(c)) d.classList.add('late');
-    d.innerHTML = `<div class="head"><div class="t"></div><div class="prio" title="приоритет: ${PRIO_NAMES[pr]}"><i></i><i></i><i></i></div></div>${c.who ? '<div class="w"></div>' : ''}${c.ddl ? '<div class="d"></div>' : ''}${c.note ? '<div class="n"></div>' : ''}<div class="ctl"><button data-act="left" title="на этап назад">←</button>${c.stage === FINAL ? '<button data-act="archive" title="в архив (завершено)">✓</button>' : ''}${admin ? '<button data-act="edit" title="переписать">✎</button>' : ''}<button data-act="right" title="на этап дальше">→</button></div>`;
+    // Двигать и архивировать карточки может только админ.
+    // Кнопка «продлить дедлайн» доступна всем — она лишь отодвигает срок.
+    const ctlBtns =
+        (admin ? '<button data-act="left" title="на этап назад">←</button>' : '') +
+        (isLate(c) ? '<button data-act="extend" title="продлить дедлайн на этап">⏱</button>' : '') +
+        (admin ? (c.stage === FINAL ? '<button data-act="archive" title="в архив (завершено)">✓</button>' : '') +
+                  '<button data-act="edit" title="переписать">✎</button>' +
+                  '<button data-act="right" title="на этап дальше">→</button>' : '');
+    d.innerHTML = `<div class="head"><div class="t"></div><div class="prio" title="приоритет: ${PRIO_NAMES[pr]}"><i></i><i></i><i></i></div></div>${c.who ? '<div class="w"></div>' : ''}${c.ddl ? '<div class="d"></div>' : ''}${c.note ? '<div class="n"></div>' : ''}<div class="ctl">${ctlBtns}</div>`;
     d.querySelector('.t').textContent = c.title;
     if (c.who) d.querySelector('.w').textContent = c.who;
     if (c.ddl) d.querySelector('.d').textContent = fmtDdl(c.ddl);
@@ -406,8 +451,11 @@ function render() {
 
 function move(c, stage) {
     stage = Math.max(1, Math.min(FINAL, stage)); if (stage === c.stage) return; const was = c.stage;
+    const oldDdl = c.ddl;
     c.stage = stage;
-    c.doneAt = (stage === FINAL) ? new Date().toISOString() : '';
+    c.ddl = moveDdl(oldDdl, stage, was); // от старого дд; назад — откатываем
+    // «видео» — такой же рабочий этап, doneAt не ставим;
+    // карточка считается выполненной только при переносе в архив.
     saveFlow(c); render();
     if (stage === FINAL && was !== FINAL) {
         sparks(); const el = board.querySelector(`.card[data-id="${c.id}"]`);
@@ -417,7 +465,7 @@ function move(c, stage) {
 }
 
 function openHand(c, stage) {
-    document.getElementById('handText').textContent = `«${c.title}» теперь на этапе «${STAGES[stage - 1].name}». кто теперь ответственный?`;
+    document.getElementById('handText').textContent = `«${c.title}» → «${STAGES[stage - 1].name}». рек. дедлайн: ${fmtDdl(c.ddl)}. кто теперь ответственный?`;
     document.getElementById('hWho').value = c.who || '';
     handCardId = c.id;
     document.getElementById('hand').classList.add('show');
@@ -437,16 +485,21 @@ function sparks() {
 /* =========================================
    ОБРАБОТЧИКИ СОБЫТИЙ
    ========================================= */
-board.addEventListener('click', e => {
+board.addEventListener('click', async e => {
     const add = e.target.closest('[data-add]'); if (add) {
         if (!requireAdmin('добавлять песни')) return;
         openEditor(null, +add.dataset.add); return;
     }
     const btn = e.target.closest('.ctl button'); if (btn) {
         const id = btn.closest('.card').dataset.id, c = byId(id);
-        if (btn.dataset.act === 'edit') openEditor(id);
-        else if (btn.dataset.act === 'archive') archiveCard(c);
-        else move(c, c.stage + (btn.dataset.act === 'right' ? 1 : -1)); return;
+        const act = btn.dataset.act;
+        if (act === 'edit' || act === 'archive' || act === 'left' || act === 'right') {
+            if (!requireAdmin(act === 'edit' ? 'редактировать' : act === 'archive' ? 'архивировать' : 'двигать')) return;
+        }
+        if (act === 'edit') openEditor(id);
+        else if (act === 'archive') archiveCard(c);
+        else if (act === 'extend') { c.ddl = recDdl(c.stage); await saveFlow(c); render(); return; }
+        else move(c, c.stage + (act === 'right' ? 1 : -1)); return;
     }
 });
 
@@ -480,7 +533,7 @@ function openEditor(id, stage) {
         fTitle.value = '';
         fNote.value = '';
         fWho.value = '';
-        fDdlInput.value = '';
+        fDdlInput.value = recDdl(newStage); // рекомендуемый дедлайн для этапа
         if (fPri) fPri.value = 2;
         delBtn.style.display = 'none';
     }
@@ -493,10 +546,9 @@ document.getElementById('saveBtn').onclick = async () => {
     const t = fTitle.value.trim() || 'без названия', n = fNote.value.trim(), w = fWho.value.trim(), dl = fDdlInput.value, pr = fPri ? (Number(fPri.value) || 2) : 2;
     if (editingId) {
         const c = byId(editingId); c.title = t; c.note = n; c.who = w; c.ddl = dl; c.priority = pr;
-        if (c.stage === FINAL && !c.doneAt) c.doneAt = new Date().toISOString();
         await saveCard(c);
     } else {
-        const c = { id: uid(), stage: newStage, title: t, note: n, who: w, ddl: dl, priority: pr, doneAt: newStage === FINAL ? new Date().toISOString() : '', archivedAt: '' };
+        const c = { id: uid(), stage: newStage, title: t, note: n, who: w, ddl: dl, priority: pr, doneAt: '', archivedAt: '' };
         state.cards.push(c); await saveCard(c);
     }
     render(); modal.classList.remove('show');
