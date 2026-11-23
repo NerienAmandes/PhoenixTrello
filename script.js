@@ -197,74 +197,108 @@ function openTeamModal() {
    РАБОТА С БАЗОЙ ДАННЫХ
    ========================================= */
 async function saveFlow(c) {
-    if (!sb) { saveLocal(); return; }
-    // Админ может менять всё; участник — только ответственного и дедлайн
-    // (двигать этапы и архивировать может только админ, колонки stage/done_at/archived_at
-    //  в грантах у участников нет, поэтому отправляем их только админам).
-    const payload = admin
-        ? { stage: c.stage, who: c.who || '', ddl: c.ddl || null, done_at: c.doneAt || null, archived_at: c.archivedAt || null }
-        : { who: c.who || '', ddl: c.ddl || null };
-    const { error } = await sb.from('cards').update(payload).eq('id', c.id);
-    if (error) { console.warn('не сохранилось', error); await loadCards(); }
-}
-
-async function saveCard(c) {
-    if (!sb) { saveLocal(); return; }
-    // Пробуем через RPC, если его нет — fallback на обычный upsert
-    try {
-        const { error } = await sb.rpc('admin_upsert_card', {
-            p_id: c.id, p_stage: c.stage, p_title: c.title, p_note: c.note || '',
-            p_who: c.who || '', p_ddl: c.ddl || null, p_done_at: c.doneAt || null,
-            p_archived_at: c.archivedAt || null, p_priority: c.priority || 2
-        });
-        if (error) throw error;
-    } catch (e) {
-        const { error } = await sb.from('cards').upsert({
-            id: c.id, stage: c.stage, title: c.title, note: c.note || '', who: c.who || '',
-            ddl: c.ddl || null, done_at: c.doneAt || null, archived_at: c.archivedAt || null, priority: c.priority || 2
-        });
-        if (error) { console.warn('не сохранилось', error); await loadCards(); }
+    if (!sb) {
+        saveLocal();
+        return true;
     }
+
+    let error;
+
+    if (admin) {
+        const result = await sb.rpc('admin_upsert_card', {
+            p_id: c.id,
+            p_stage: c.stage,
+            p_title: c.title,
+            p_note: c.note || '',
+            p_who: c.who || '',
+            p_ddl: c.ddl || null,
+            p_done_at: c.doneAt || null,
+            p_archived_at: c.archivedAt || null,
+            p_priority: c.priority || 2
+        });
+
+        error = result.error;
+    } else {
+        const result = await sb
+            .from('cards')
+            .update({
+                who: c.who || '',
+                ddl: c.ddl || null
+            })
+            .eq('id', c.id);
+
+        error = result.error;
+    }
+
+    if (error) {
+        console.error('Не сохранилось:', error);
+        alert('Не удалось сохранить: ' + error.message);
+        await loadCards();
+        return false;
+    }
+
+    return true;
+}
+async function saveCard(c) {
+    if (!sb) {
+        saveLocal();
+        return true;
+    }
+
+    if (!admin) {
+        alert('Создавать и редактировать карточки может только администратор');
+        return false;
+    }
+
+    const { error } = await sb.rpc('admin_upsert_card', {
+        p_id: c.id,
+        p_stage: c.stage,
+        p_title: c.title,
+        p_note: c.note || '',
+        p_who: c.who || '',
+        p_ddl: c.ddl || null,
+        p_done_at: c.doneAt || null,
+        p_archived_at: c.archivedAt || null,
+        p_priority: c.priority || 2
+    });
+
+    if (error) {
+        console.error('Не сохранилось:', error);
+        alert('Не удалось сохранить карточку: ' + error.message);
+        await loadCards();
+        return false;
+    }
+
+    return true;
 }
 
 async function removeCard(id) {
+    if (!sb) {
+        state.cards = state.cards.filter(c => c.id !== id);
+        saveLocal();
+        render();
+        return true;
+    }
+
+    if (!admin) {
+        alert('Удалять карточки может только администратор');
+        return false;
+    }
+
+    const { error } = await sb.rpc('admin_delete_card', {
+        p_id: id
+    });
+
+    if (error) {
+        console.error('Не удалось удалить:', error);
+        alert('Не удалось удалить карточку: ' + error.message);
+        return false;
+    }
+
     state.cards = state.cards.filter(c => c.id !== id);
     render();
-    if (!sb) { saveLocal(); return; }
-    try {
-        const { error } = await sb.rpc('admin_delete_card', { p_id: id });
-        if (error) throw error;
-    } catch (e) {
-        const { error } = await sb.from('cards').delete().eq('id', id);
-        if (error) { console.warn('не сожглось', error); await loadCards(); }
-    }
+    return true;
 }
-
-function archiveCard(c) { c.archivedAt = new Date().toISOString(); saveFlow(c); render(); }
-function unarchiveCard(c) { c.archivedAt = ''; saveFlow(c); render(); }
-
-/* =========================================
-   АВТОРИЗАЦИЯ И ПРАВА
-   ========================================= */
-async function refreshAuth() {
-    if (!sb) return;
-    const { data } = await sb.auth.getSession();
-    me = data.session?.user ?? null;
-
-    try {
-        admin = me ? !!(await sb.rpc('is_admin')).data : false;
-    } catch (e) {
-        admin = false; // Fallback, если RPC is_admin ещё не создан
-    }
-
-    authBtn.textContent = admin ? `админ: ${me.email.split('@')[0]}` : me ? `вошел: ${me.email.split('@')[0]}` : 'войти';
-
-    const teamBtn = document.getElementById('teamBtn');
-    if (teamBtn) teamBtn.hidden = !admin;
-
-    render();
-}
-
 function requireAdmin(act) {
     if (admin) return true;
     if (me) { alert(`${act} может только админ`); return false; }
@@ -543,22 +577,58 @@ function openEditor(id, stage) {
 }
 
 document.getElementById('saveBtn').onclick = async () => {
-    const t = fTitle.value.trim() || 'без названия', n = fNote.value.trim(), w = fWho.value.trim(), dl = fDdlInput.value, pr = fPri ? (Number(fPri.value) || 2) : 2;
-    if (editingId) {
-        const c = byId(editingId); c.title = t; c.note = n; c.who = w; c.ddl = dl; c.priority = pr;
-        await saveCard(c);
-    } else {
-        const c = { id: uid(), stage: newStage, title: t, note: n, who: w, ddl: dl, priority: pr, doneAt: '', archivedAt: '' };
-        state.cards.push(c); await saveCard(c);
+    if (!admin) {
+        alert('Редактировать карточки может только администратор');
+        return;
     }
-    render(); modal.classList.remove('show');
+
+    const t = fTitle.value.trim() || 'без названия';
+    const n = fNote.value.trim();
+    const w = fWho.value.trim();
+    const dl = fDdlInput.value;
+    const pr = fPri ? (Number(fPri.value) || 2) : 2;
+
+    if (editingId) {
+        const c = byId(editingId);
+
+        c.title = t;
+        c.note = n;
+        c.who = w;
+        c.ddl = dl;
+        c.priority = pr;
+
+        if (!await saveCard(c)) return;
+
+    } else {
+        const c = {
+            id: uid(),
+            stage: newStage,
+            title: t,
+            note: n,
+            who: w,
+            ddl: dl,
+            priority: pr,
+            doneAt: '',
+            archivedAt: ''
+        };
+
+        if (!await saveCard(c)) return;
+
+        state.cards.push(c);
+    }
+
+    render();
+    modal.classList.remove('show');
 };
 
-delBtn.onclick = async () => { if (!requireAdmin('сжигать карточки')) return; if (!confirm('сжечь карточку?')) return; await removeCard(editingId); modal.classList.remove('show'); };
-document.getElementById('cancelBtn').onclick = () => modal.classList.remove('show');
-document.getElementById('handSave').onclick = async () => { const c = byId(handCardId); if (c) { c.who = document.getElementById('hWho').value.trim(); await saveFlow(c); render(); } hand.classList.remove('show'); };
-document.getElementById('handSkip').onclick = () => hand.classList.remove('show');
+delBtn.onclick = async () => {
+    if (!requireAdmin('сжигать карточки')) return;
+    if (!confirm('сжечь карточку?')) return;
 
+    if (await removeCard(editingId)) {
+        modal.classList.remove('show');
+    }
+};
 // Закрытие модалок по клику на фон отключено для удобства на мобильных, работает только Esc или кнопки
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { modal.classList.remove('show'); hand.classList.remove('show'); loginModal.classList.remove('show'); document.getElementById('teamModal').classList.remove('show'); } });
 
