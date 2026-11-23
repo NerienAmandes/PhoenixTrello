@@ -704,6 +704,14 @@ delBtn.onclick = async () => {
         modal.classList.remove('show');
     }
 };
+document.getElementById('cancelBtn').onclick = () => modal.classList.remove('show');
+document.getElementById('handSave').onclick = async () => {
+    const c = byId(handCardId);
+    if (c) { c.who = document.getElementById('hWho').value.trim(); await saveFlow(c); render(); }
+    hand.classList.remove('show');
+};
+document.getElementById('handSkip').onclick = () => hand.classList.remove('show');
+
 // Закрытие модалок по клику на фон отключено для удобства на мобильных, работает только Esc или кнопки
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { modal.classList.remove('show'); hand.classList.remove('show'); loginModal.classList.remove('show'); document.getElementById('teamModal').classList.remove('show'); } });
 
