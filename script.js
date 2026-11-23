@@ -146,7 +146,7 @@ async function addMember() {
         await loadMembers();
         renderTeamList();
     } catch (e) { alert('Не удалось добавить'); }
-}
+} 
 
 async function removeMember(id) {
     if (!confirm('Убрать участника из списка?')) return;
