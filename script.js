@@ -179,7 +179,7 @@ async function addMember() {
         await loadMembers();
         renderTeamList();
     } catch (e) { alert('Не удалось добавить'); }
-} 
+}
 
 async function removeMember(id) {
     if (!confirm('Убрать участника из списка?')) return;
@@ -411,8 +411,8 @@ function cardEl(c) {
         (admin ? '<button data-act="left" title="на этап назад">←</button>' : '') +
         (isLate(c) ? '<button data-act="extend" title="продлить дедлайн на этап">⏱</button>' : '') +
         (admin ? (c.stage === FINAL ? '<button data-act="archive" title="в архив (завершено)">✓</button>' : '') +
-                  '<button data-act="edit" title="переписать">✎</button>' +
-                  '<button data-act="right" title="на этап дальше">→</button>' : '');
+            '<button data-act="edit" title="переписать">✎</button>' +
+            '<button data-act="right" title="на этап дальше">→</button>' : '');
     d.innerHTML = `<div class="head"><div class="t"></div><div class="prio" title="приоритет: ${PRIO_NAMES[pr]}"><i></i><i></i><i></i></div></div>${c.who ? '<div class="w"></div>' : ''}${c.ddl ? '<div class="d"></div>' : ''}${c.note ? '<div class="n"></div>' : ''}<div class="ctl">${ctlBtns}</div>`;
     d.querySelector('.t').textContent = c.title;
     if (c.who) d.querySelector('.w').textContent = c.who;
