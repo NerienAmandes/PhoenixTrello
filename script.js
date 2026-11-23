@@ -122,13 +122,62 @@ function renderTeamList() {
             : '<span class="t-role-empty">нажми, чтобы задать роль</span>';
         div.innerHTML = `
             <div class="t-info">
-                <span class="t-name">${m.name}</span>
+                <span class="t-name" title="кликни, чтобы изменить имя">${m.name}</span>
                 <span class="t-roles" title="кликни, чтобы изменить роль">${roleHtml}</span>
             </div>
             <button class="t-del" data-id="${m.id}">убрать</button>
         `;
         list.appendChild(div);
     });
+}
+
+function startEditName(nameEl) {
+    const member = nameEl.closest('.t-member');
+    const id = member.dataset.id;
+    const current = teamMembers.find(m => m.id == id)?.name || '';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 't-name-input';
+    input.value = current;
+    input.placeholder = 'имя участника';
+    nameEl.innerHTML = '';
+    nameEl.appendChild(input);
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+
+    const finish = async () => {
+        const val = input.value.trim();
+        renderTeamList();
+        if (val && val !== current) await updateMemberName(id, val);
+    };
+    input.addEventListener('blur', finish);
+    input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+        if (e.key === 'Escape') { input.value = current; input.blur(); }
+    });
+}
+
+async function updateMemberName(id, name) {
+    if (!sb) return;
+    const member = teamMembers.find(m => m.id == id);
+    const oldName = member?.name;
+    try {
+        const { error } = await sb.from('members').update({ name }).eq('id', id);
+        if (error) { alert('Ошибка: ' + error.message); return; }
+        await loadMembers();
+        renderTeamList();
+        // Обновляем упоминания старого ника в карточках
+        if (oldName && oldName !== name) {
+            for (const c of state.cards) {
+                const whoArr = (c.who || '').split(',').map(s => s.trim()).filter(Boolean);
+                if (whoArr.includes(oldName)) {
+                    c.who = whoArr.map(w => w === oldName ? name : w).join(', ');
+                    await saveFlow(c);
+                }
+            }
+            render();
+        }
+    } catch (e) { alert('Не удалось сохранить имя'); }
 }
 
 function startEditRole(rolesEl) {
@@ -299,6 +348,32 @@ async function removeCard(id) {
     render();
     return true;
 }
+
+function archiveCard(c) { c.archivedAt = new Date().toISOString(); saveFlow(c); render(); }
+function unarchiveCard(c) { c.archivedAt = ''; saveFlow(c); render(); }
+
+/* =========================================
+   АВТОРИЗАЦИЯ И ПРАВА
+   ========================================= */
+async function refreshAuth() {
+    if (!sb) return;
+    const { data } = await sb.auth.getSession();
+    me = data.session?.user ?? null;
+
+    try {
+        admin = me ? !!(await sb.rpc('is_admin')).data : false;
+    } catch (e) {
+        admin = false; // Fallback, если RPC is_admin ещё не создан
+    }
+
+    authBtn.textContent = admin ? `админ: ${me.email.split('@')[0]}` : me ? `вошел: ${me.email.split('@')[0]}` : 'войти';
+
+    const teamBtn = document.getElementById('teamBtn');
+    if (teamBtn) teamBtn.hidden = !admin;
+
+    render();
+}
+
 function requireAdmin(act) {
     if (admin) return true;
     if (me) { alert(`${act} может только админ`); return false; }
@@ -654,6 +729,8 @@ const teamList = document.getElementById('teamList');
 if (teamList) teamList.addEventListener('click', e => {
     const btn = e.target.closest('.t-del');
     if (btn) { removeMember(btn.dataset.id); return; }
+    const nameEl = e.target.closest('.t-name');
+    if (nameEl && !nameEl.querySelector('input')) { startEditName(nameEl); return; }
     const rolesEl = e.target.closest('.t-roles');
     if (rolesEl && !rolesEl.querySelector('input')) startEditRole(rolesEl);
 });

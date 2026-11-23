@@ -1548,6 +1548,20 @@ body.light .col[data-stage="6"] {
 .t-member .t-name {
     font-size: 20px;
     color: var(--ink);
+    cursor: pointer;
+}
+
+.t-member .t-name-input {
+    font-family: Caveat, cursive;
+    font-size: 20px;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1.5px solid var(--verm);
+    border-radius: 6px;
+    padding: 2px 8px;
+    width: 100%;
+    box-sizing: border-box;
+    outline: none;
 }
 
 .t-member .t-roles {
