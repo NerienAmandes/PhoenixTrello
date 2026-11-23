@@ -67,6 +67,17 @@ const SERVICE_KEY = env('SUPABASE_SERVICE_ROLE_KEY');
 const TG_TOKEN = env('TELEGRAM_BOT_TOKEN');
 const BOT_SECRET = env('BOT_SECRET');
 
+/* проверка секретов при старте — чтобы функция явно ругалась,
+   а не падала с непонятной ошибкой где-то в середине */
+function checkSecrets(): string | null {
+    const missing: string[] = [];
+    if (!SUPABASE_URL) missing.push('SUPABASE_URL');
+    if (!SERVICE_KEY) missing.push('SUPABASE_SERVICE_ROLE_KEY');
+    if (!TG_TOKEN) missing.push('TELEGRAM_BOT_TOKEN');
+    if (!BOT_SECRET) missing.push('BOT_SECRET');
+    return missing.length ? `не заданы секреты функции: ${missing.join(', ')}` : null;
+}
+
 /* ---------- типы ---------- */
 export type Card = {
     id: string;
@@ -444,6 +455,10 @@ async function setup(sendTest: boolean): Promise<Record<string, unknown>> {
 
 /* ---------- маршрутизация ---------- */
 const handler = async (req: Request): Promise<Response> => {
+    /* если не хватает секретов — сразу говорим, чего именно */
+    const secretErr = checkSecrets();
+    if (secretErr) return json({ error: secretErr }, 500);
+
     const url = new URL(req.url);
     /* путь может прийти как /telegram-bot/setup (локально)
        и как /functions/v1/telegram-bot/setup (как в Supabase) —
@@ -465,7 +480,13 @@ const handler = async (req: Request): Promise<Response> => {
             const body = await req.json();
             force = !!body?.force;
         } catch { /* пустое тело — обычная рассылка */ }
-        return json(await dispatch(force));
+        try {
+            return json(await dispatch(force));
+        } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            console.error('dispatch error', e);
+            return json({ error: 'внутренняя ошибка', detail: msg }, 500);
+        }
     }
 
     /* вебхук Телеграма */

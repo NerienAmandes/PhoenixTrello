@@ -28,13 +28,38 @@ jobs:
           BOT_SECRET: ${{ secrets.BOT_SECRET }}
           FORCE_INPUT: ${{ inputs.force }}
         run: |
-          # Плановый запуск — тихо: функция сама решает, кому и когда писать.
-          # Ручной запуск — по умолчанию тоже тихо, но можно форсировать.
+          # --- диагностика: показываем, какие секреты заданы (значения не печатаем) ---
+          echo "SUPABASE_URL: ${SUPABASE_URL:-(не задан)}"
+          echo "SUPABASE_ANON_KEY: $([ -n "$SUPABASE_ANON_KEY" ] && echo задан || echo НЕ ЗАДАН)"
+          echo "BOT_SECRET: $([ -n "$BOT_SECRET" ] && echo задан || echo НЕ ЗАДАН)"
+          echo "force: ${FORCE_INPUT:-false}"
+          echo
+
           force="false"
           if [ "$FORCE_INPUT" = "true" ]; then force="true"; fi
-          curl -sS -X POST "$SUPABASE_URL/functions/v1/telegram-bot/dispatch" \
+
+          url="$SUPABASE_URL/functions/v1/telegram-bot/dispatch"
+          echo "POST $url"
+          echo
+
+          # пишем ответ в файл, чтобы показать и код, и тело
+          resp=$(mktemp)
+          code=$(curl -sS -o "$resp" -w '%{http_code}' -X POST "$url" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
             -H "x-bot-secret: $BOT_SECRET" \
-            -d "{\"force\": $force}"
+            -d "{\"force\": $force}")
+
+          echo "HTTP $code"
+          echo "--- ответ функции ---"
+          cat "$resp"
           echo
+          echo "--- конец ответа ---"
+          rm -f "$resp"
+
+          # 4xx/5xx — функция сломалась или секрет не тот, подсвечиваем ошибкой
+          case "$code" in
+            2*) echo "ок" ;;
+            *)  echo "::error::функция ответила кодом $code — проверь секреты, деплой и Verify JWT"
+                exit 1 ;;
+          esac
