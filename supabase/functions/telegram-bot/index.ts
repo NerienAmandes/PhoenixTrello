@@ -11,7 +11,7 @@
    Как часто напоминать (считается по каждой карточке отдельно):
    • ддл дальше 7 дней   — раз в неделю, по понедельникам
    • ддл ≤ 7 дней        — раз в 2 дня
-   • просрочено           — каждый день, с текстом «ПРОСРОЧЕНО !! проверьте и обновите данные»
+   • просрочено           — раз в 4 дня, с указанием дней просрочки
    • без ддл              — раз в неделю, по понедельникам
    Про то, кого и когда доломали, бот помнит в самой карточке
    (колонки bot_tier и bot_sent_at).
@@ -45,14 +45,13 @@ const MONTHS = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'и�
 
 const TZ_OFFSET = 3 * 3600e3;  /* Москва — чтобы «день» совпадал с сайтом */
 const DAY = 864e5;
-const NEW_DAYS = 7;           /* свежая карточка — такая отметка ещё горит неделю */
 const LIMIT = 3600;            /* Телеграм не ест сообщения длиннее 4096 */
 
 /* ---------- когда напоминать по каждому тиру ---------- */
 export type Tier = 'late' | 'soon' | 'far' | 'noddl';
 
 const TIER_GAP: Record<Tier, number> = {
-    late: 3 * DAY,    /* просрочено — каждый день, чтобы не залечивалось */
+    late: 4 * DAY,    /* просрочено — раз в 4 дня, чтобы не долбить каждый день */
     soon: 2 * DAY,    /* ддл ≤ 7 дней — раз в 2 дня */
     far: 7 * DAY,     /* ддл дальше 7 дней — раз в неделю */
     noddl: 7 * DAY    /* без ддл — раз в неделю */
@@ -96,10 +95,10 @@ const START_TEXT = [
     '',
     'Чтобы включить уведомления — пришли свой email (тот же, что на сайте).',
     'Я проверю, что ты админ и буду напоминать:',
-    '➕ карточки без ДДЛ — данные из списка не внесены на сайт (раз в неделю)',
+    '➕ карточки без ДДЛ — данные не внесены на сайт (раз в неделю)',
     '📆 дедлайны дальше 7 дней (раз в неделю)',
     '⚡ дедлайны, что скоро подойдут (раз в 2 дня)',
-    '⏰ просроченные — каждый день «ПРОСРОЧЕНО !! проверьте и обновите данные»',
+    '⏰ просроченные — раз в 4 дня, с указанием дней просрочки',
     '',
     'Напоминания идут по отделам — от записи вокала до видео,',
     'внутри отдела сначала важные (★★★), потом обычные и низкие.',
@@ -145,17 +144,29 @@ export function plural(n: number): string {
     return 'дней';
 }
 
-/* длинное сообщение режем по строкам, чтобы влезало в лимит Телеграма */
+/* длинное сообщение режем по блокам, чтобы карточка
+   (заголовок + строка с отступом) не разорвалась пополам */
 export function split(text: string, limit = LIMIT): string[] {
     const out: string[] = [];
-    let cur = '';
+    /* сначала склеиваем карточку в один блок: строка, начинающаяся
+       с пробела — это продолжение предыдущей строки */
+    const blocks: string[] = [];
     for (const raw of text.split('\n')) {
-        const line = raw.length > limit ? raw.slice(0, limit) : raw;
-        if (cur.length + line.length + 1 > limit) {
-            if (cur) out.push(cur);
-            cur = line;
+        if (raw.startsWith(' ') || raw.startsWith('\t')) {
+            if (blocks.length) blocks[blocks.length - 1] += '\n' + raw;
+            else blocks.push(raw);
         } else {
-            cur = cur ? `${cur}\n${line}` : line;
+            blocks.push(raw);
+        }
+    }
+    let cur = '';
+    for (const block of blocks) {
+        const b = block.length > limit ? block.slice(0, limit) : block;
+        if (cur.length + b.length + 1 > limit) {
+            if (cur) out.push(cur);
+            cur = b;
+        } else {
+            cur = cur ? `${cur}\n${b}` : b;
         }
     }
     if (cur) out.push(cur);
@@ -246,11 +257,20 @@ export function planDue(cards: Card[], now: number, force: boolean): Due[] {
 
 /* ---------- сообщение ---------- */
 /* приоритет: 1 — низкий, 2 — обычный, 3 — высокий */
-const PRIO_LABEL: Record<number, string> = {
-    1: '★ низкий',
-    2: '★★ обычный',
-    3: '★★★ высокий'
+const PRIO_STAR: Record<number, string> = {
+    1: '☆',
+    2: '★★',
+    3: '★★★'
 };
+
+const WEEKDAYS = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'];
+const MONTHS_GEN = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+
+/* «23 ноября, понедельник» — для заголовка дайджеста */
+function fullDate(now: number): string {
+    const d = new Date(now + TZ_OFFSET);
+    return `${d.getUTCDate()} ${MONTHS_GEN[d.getUTCMonth()]}, ${WEEKDAYS[d.getUTCDay()]}`;
+}
 
 /* приоритет в допустимом виде: что-то другое считаем обычным */
 const prioOf = (c: Card): number => (c.priority === 1 || c.priority === 3 ? c.priority : 2);
@@ -276,39 +296,40 @@ export function renderDigest(due: Due[], cards: Card[], now: number): string {
 
     const line = (d: Due): string => {
         const c = d.card;
-        const bits: string[] = [PRIO_LABEL[prioOf(c)]];
+        const bits: string[] = [PRIO_STAR[prioOf(c)]];
         if (d.tier === 'late') {
             const over = -d.daysLeft;
-            bits.push(`⏰ ПРОСРОЧЕНО на ${over} ${plural(over)} !! проверьте и обновите данные`);
+            bits.push(`⏰ просрочено на ${over} ${plural(over)}`);
         } else if (c.ddl) {
             const left = d.daysLeft;
             const when = left === 0 ? 'сегодня' : left === 1 ? 'завтра' : `через ${left} ${plural(left)}`;
-            bits.push(`📆 ддл ${dayLabel(c.ddl)} (${when})`);
+            bits.push(`📆 ${dayLabel(c.ddl)} · ${when}`);
         } else {
             bits.push('➕ без ддл — внести данные');
         }
-        if (c.who) bits.push(`делают: ${esc(c.who)}`);
-        if (c.created_at && now - Date.parse(c.created_at) <= NEW_DAYS * DAY) bits.push('новенькая');
-        return `• <b>${esc(c.title)}</b>\n   ${bits.join(' · ')}`;
+        if (c.who) bits.push(`👤 ${esc(c.who)}`);
+        if (c.note) bits.push(`📝 ${esc(c.note)}`);
+        return `• <b>${esc(c.title)}</b>\n   ${bits.join('  ·  ')}`;
     };
 
-    const parts: string[] = ['<b>🔥 PhoenixTrello — напоминания</b>', ''];
+    const parts: string[] = ['<b>🔥 PhoenixTrello — напоминания</b>', `🕐 ${fullDate(now)}`, ''];
 
     for (const st of STAGES) {
         const list = byStage.get(st.id);
         if (!list || !list.length) continue;
         list.sort(byPriority);
-        parts.push(`<b>${st.id} · ${esc(st.name)}</b> <i>— ${list.length}</i>`);
+        parts.push(`<b>━━━ ${st.id} · ${esc(st.name)} ━━━</b>  <i>${list.length}</i>`);
         parts.push(...list.map(line));
         parts.push('');
     }
 
     const active = cards.filter(c => !c.archived_at);
-    parts.push(`<b>📊 Доска</b> — ${active.length} карточек`);
-    for (const st of STAGES) {
+    parts.push('<b>📊 Доска</b>');
+    const stageCounts = STAGES.map(st => {
         const n = active.filter(c => c.stage === st.id).length;
-        if (n) parts.push(`${st.id} · ${esc(st.name)} — ${n}`);
-    }
+        return n ? `${st.id} · ${esc(st.name)} — ${n}` : null;
+    }).filter(Boolean);
+    parts.push(`всего: ${active.length}  ·  ${stageCounts.join('  ·  ')}`);
 
     return parts.join('\n');
 }
